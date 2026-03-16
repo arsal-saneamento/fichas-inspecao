@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Sistema digital de preenchimento e geração de relatórios para inspeções de saneamento do Estado de Alagoas – ARSAL/Gefsan.">
+<meta name="theme-color" content="#003B7A">
+<meta name="robots" content="noindex, nofollow">
+<title>ARSAL – Fichas de Inspeção</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+<style>
+:root {
+  --arsal-blue: #003B7A;
+  --arsal-blue-mid: #005BB5;
+  --arsal-blue-light: #1976D2;
+  --arsal-red: #C0392B;
+  --arsal-gold: #E8A020;
+  --bg: #F0F4F8;
+  --surface: #FFFFFF;
+  --surface2: #F7F9FC;
+  --border: #D0DCE8;
+  --text: #0D1B2A;
+  --muted: #5A7090;
+  --success: #1B7A4A;
+  --tag-agua: #0369A1;
+  --tag-esgoto: #7C3AED;
+  --tag-comercial: #0F766E;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+}
+
+/* ===== TOPO ===== */
+.top-bar{
+  background:#fff;
+  padding:0 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  height:72px;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);
+  border-bottom:2px solid var(--border);
+}
+.logo-area{display:flex;align-items:center;gap:14px;}
+.logo-badge{
+  width:38px;height:38px;background:var(--arsal-gold);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Inter',sans-serif;font-weight:800;font-size:1rem;color:#fff;letter-spacing:-1px;
+}
+.logo-text{font-family:'Inter',sans-serif;font-weight:700;font-size:1.05rem;color:var(--arsal-blue);letter-spacing:.02em;}
+.logo-sub{font-size:.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:1px;}
+.top-right{display:flex;align-items:center;gap:12px;}
+.save-pill{
+  display:flex;align-items:center;gap:7px;
+  background:var(--surface2);border:1px solid var(--border);
+  padding:5px 14px;border-radius:20px;font-size:.72rem;color:var(--muted);
+  transition:all .4s;
+}
+.save-pill.saved{color:var(--success);border-color:rgba(27,122,74,.25);}
+.save-pill.saving{color:var(--arsal-gold);border-color:rgba(232,160,32,.3);}
+.save-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.saving .save-dot{animation:blink .7s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.btn-home{
+  background:var(--arsal-blue);border:1px solid var(--arsal-blue);
+  color:#fff;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:.8rem;
+  font-family:'Inter',sans-serif;transition:all .2s;
+}
+.btn-home:hover{background:var(--arsal-blue-mid);}
+
+/* ===== TELA INICIAL ===== */
+#screen-home{display:block;}
+#screen-form{display:none;}
+
+.hero{
+  background:linear-gradient(135deg, var(--arsal-blue) 0%, var(--arsal-blue-mid) 60%, #0A4D9A 100%);
+  padding:56px 40px 48px;
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.hero-inner{position:relative;max-width:900px;margin:0 auto;}
+.hero h1{
+  font-family:'Inter',sans-serif;font-weight:800;font-size:2.4rem;color:#fff;
+  line-height:1.15;margin-bottom:10px;
+}
+.hero h1 span{color:var(--arsal-gold);}
+.hero p{color:rgba(255,255,255,.65);font-size:.95rem;font-weight:300;line-height:1.7;max-width:560px;}
+.hero-subtitle{font-size:1.05rem;font-weight:500;color:rgba(255,255,255,.75);margin-top:8px;margin-bottom:2px;letter-spacing:.01em;}
+.hero-stats{
+  display:flex;gap:32px;margin-top:28px;flex-wrap:wrap;
+}
+.stat{display:flex;flex-direction:column;}
+.stat-n{font-family:'Inter',sans-serif;font-weight:700;font-size:1.8rem;color:var(--arsal-gold);}
+.stat-l{font-size:.72rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;}
+
+.section-title{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:.68rem;
+  text-transform:uppercase;letter-spacing:.14em;
+  color:#fff;
+  display:block;
+  width:fit-content;
+  padding:6px 18px;
+  border-radius:6px;
+  background:linear-gradient(135deg,#002a5c 0%,#004fa3 100%);
+  margin:36px auto 16px;
+}
+.cards-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:16px;padding:0 40px 40px;max-width:1200px;margin:0 auto;
+}
+
+.form-card{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:12px;
+  padding:22px 22px 18px;cursor:pointer;
+  transition:all .22s cubic-bezier(.34,1.4,.64,1);
+  position:relative;overflow:hidden;
+}
+.form-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--arsal-blue-light),var(--arsal-blue));
+  transform:scaleX(0);transform-origin:left;transition:transform .3s ease;
+}
+.form-card:hover{
+  border-color:var(--arsal-blue-light);
+  box-shadow:0 8px 24px rgba(0,59,122,.12);
+  transform:translateY(-3px);
+}
+.form-card:hover::before{transform:scaleX(1);}
+.card-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.65rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 10px;border-radius:20px;margin-bottom:14px;
+}
+.tag-agua{background:#E0F2FE;color:var(--tag-agua);}
+.tag-esgoto{background:#EDE9FE;color:var(--tag-esgoto);}
+.tag-comercial{background:#CCFBF1;color:var(--tag-comercial);}
+.tag-monitoramento{background:#FEF3C7;color:#92400E;}
+
+.card-icon{font-size:1.6rem;margin-bottom:10px;}
+.card-title{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:.95rem;
+  color:var(--text);line-height:1.3;margin-bottom:6px;
+}
+.card-desc{font-size:.78rem;color:var(--muted);line-height:1.55;}
+.card-arrow{
+  position:absolute;bottom:18px;right:18px;
+  width:28px;height:28px;background:var(--bg);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;color:var(--muted);transition:all .2s;
+}
+.form-card:hover .card-arrow{background:var(--arsal-blue);color:#fff;}
+
+/* ===== TELA FORMULÁRIO ===== */
+.form-topbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:14px 40px;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;
+}
+.form-breadcrumb{display:flex;align-items:center;gap:8px;font-size:.82rem;}
+.form-breadcrumb .bc-home{color:var(--arsal-blue-light);cursor:pointer;}
+.form-breadcrumb .bc-sep{color:var(--border);}
+.form-breadcrumb .bc-current{color:var(--muted);font-weight:500;}
+.progress-wrap{flex:1;max-width:240px;}
+.progress-bar-track{background:var(--bg);border-radius:4px;height:5px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--arsal-blue-light),var(--arsal-blue));border-radius:4px;transition:width .5s ease;}
+.progress-label{font-size:.7rem;color:var(--muted);text-align:right;margin-top:4px;}
+
+.form-container{max-width:860px;margin:0 auto;padding:32px 24px 80px;}
+
+.form-header{
+  background:var(--arsal-blue);border-radius:12px;
+  padding:28px 32px;margin-bottom:28px;
+}
+.form-header-tag{
+  display:inline-block;font-size:.65rem;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);
+  padding:3px 10px;border-radius:20px;margin-bottom:10px;
+}
+.form-header h2{
+  font-family:'Inter',sans-serif;font-weight:800;font-size:1.5rem;
+  color:#fff;line-height:1.2;
+}
+.form-meta-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px;
+}
+.meta-field label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.55);display:block;margin-bottom:5px;}
+.meta-field input{
+  width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:6px;padding:8px 12px;color:#fff;font-size:.88rem;
+  font-family:'Inter',sans-serif;outline:none;
+}
+.meta-field input::placeholder{color:rgba(255,255,255,.35);}
+.meta-field input:focus{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);}
+
+/* SECTIONS */
+.form-section{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:10px;
+  margin-bottom:28px;overflow:hidden;
+  animation:fadeUp .4s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.section-head{
+  background:var(--surface2);border-bottom:1.5px solid var(--border);
+  padding:12px 20px;display:flex;align-items:center;gap:10px;
+}
+.section-num{
+  width:26px;height:26px;background:var(--arsal-blue);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+.section-name{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:.88rem;
+  color:var(--arsal-blue);letter-spacing:.01em;
+}
+.section-body{padding:16px 20px;}
+
+/* QUESTION */
+.question-block{
+  border-bottom:1px solid var(--border);padding:18px 0;
+}
+.question-block:last-child{border-bottom:none;padding-bottom:8px;}
+.question-text{font-size:.875rem;color:var(--text);line-height:1.55;margin-bottom:10px;font-weight:500;}
+.question-text .q-num{color:var(--arsal-blue-light);font-weight:700;margin-right:4px;}
+.radio-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.radio-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border:1.5px solid var(--border);border-radius:100px;
+  cursor:pointer;font-size:.8rem;color:var(--muted);background:var(--surface);
+  transition:all .15s;user-select:none;
+}
+.radio-chip input{display:none;}
+.radio-chip:hover{border-color:var(--arsal-blue-light);color:var(--arsal-blue);}
+.radio-chip.sel-sim{background:#DBEAFE;border-color:#60A5FA;color:#1D4ED8;font-weight:600;}
+.radio-chip.sel-nao{background:#FEE2E2;border-color:#FCA5A5;color:#B91C1C;font-weight:600;}
+.radio-chip.sel-na{background:#9CA3AF;border-color:#6B7280;color:#fff;font-weight:600;}
+
+.obs-input{
+  margin-top:8px;width:100%;
+  border:1.5px solid var(--border);border-radius:6px;
+  padding:8px 12px;font-size:.82rem;font-family:'Inter',sans-serif;
+  color:var(--text);background:var(--surface);outline:none;
+  transition:border-color .2s;resize:none;min-height:36px;
+}
+.obs-input:focus{border-color:var(--arsal-blue-light);}
+.obs-input.filled{border-color:#86EFAC;background:#F0FDF4;}
+.text-input{
+  width:100%;border:1.5px solid var(--border);border-radius:6px;
+  padding:9px 12px;font-size:.88rem;font-family:'Inter',sans-serif;
+  color:var(--text);background:var(--surface);outline:none;transition:border-color .2s;
+}
+.text-input:focus{border-color:var(--arsal-blue-light);}
+.text-input.filled{border-color:#86EFAC;background:#F0FDF4;}
+.two-col-inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
+.field-label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;}
+.check-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.check-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border:1.5px solid var(--border);border-radius:100px;
+  cursor:pointer;font-size:.8rem;color:var(--muted);background:var(--surface);
+  transition:all .15s;user-select:none;
+}
+.check-chip input{display:none;}
+.check-chip.checked{background:#DBEAFE;border-color:#60A5FA;color:#1D4ED8;font-weight:600;}
+
+/* CONFORMIDADE BOX (usado no relatório) */
+.conformidade-box{
+  background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;
+  padding:20px;margin-top:20px;
+}
+.conformidade-title{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:.88rem;
+  color:var(--arsal-blue);margin-bottom:14px;
+}
+.conformidade-counts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.conf-badge{
+  padding:3px 12px;border-radius:20px;font-size:.78rem;font-weight:600;
+}
+.conf-sim{background:#DCFCE7;color:#166534;}
+.conf-nao{background:#FEE2E2;color:#991B1B;}
+.conf-na{background:#F3F4F6;color:#6B7280;}
+.conf-total{background:#DBEAFE;color:#1D4ED8;}
+.conformidade-bar-wrap{margin-top:4px;}
+.conformidade-bar-track{
+  display:flex;height:10px;border-radius:6px;overflow:hidden;
+  background:var(--border);
+}
+.conformidade-bar-sim{background:#22C55E;height:100%;transition:width .5s ease;}
+.conformidade-bar-nao{background:#EF4444;height:100%;transition:width .5s ease;}
+.conformidade-bar-na{background:#9CA3AF;height:100%;transition:width .5s ease;}
+.conf-pct{font-size:.78rem;color:var(--muted);margin-top:6px;}
+
+/* CONSIDERAÇÕES */
+.considerations{
+  background:var(--surface);border:1.5px solid var(--border);border-radius:10px;
+  padding:20px;margin-bottom:24px;
+}
+.considerations label{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:.85rem;
+  color:var(--arsal-blue);display:block;margin-bottom:10px;
+}
+.considerations textarea{
+  width:100%;border:1.5px solid var(--border);border-radius:6px;
+  padding:12px;font-size:.88rem;font-family:'Inter',sans-serif;
+  color:var(--text);background:var(--surface);outline:none;
+  resize:vertical;min-height:100px;transition:border-color .2s;
+}
+.considerations textarea:focus{border-color:var(--arsal-blue-light);}
+
+/* ACTIONS */
+.form-actions{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-top:8px;flex-wrap:wrap;gap:12px;
+}
+.btn-clear-form{
+  border:1.5px solid var(--border);background:none;color:var(--muted);
+  padding:10px 22px;border-radius:7px;cursor:pointer;font-size:.83rem;
+  font-family:'Inter',sans-serif;transition:all .2s;
+}
+.btn-clear-form:hover{border-color:var(--arsal-red);color:var(--arsal-red);}
+.btn-report{
+  background:var(--arsal-blue);color:#fff;border:none;
+  padding:11px 32px;border-radius:7px;cursor:pointer;font-size:.9rem;font-weight:600;
+  font-family:'Inter',sans-serif;letter-spacing:.02em;
+  box-shadow:0 4px 14px rgba(0,59,122,.3);transition:all .2s;
+}
+.btn-report:hover{background:var(--arsal-blue-mid);box-shadow:0 6px 20px rgba(0,59,122,.4);transform:translateY(-1px);}
+
+/* MODAL RELATÓRIO */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,20,50,.7);backdrop-filter:blur(4px);
+  z-index:300;display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-bg.open{display:flex;}
+.modal{
+  background:var(--surface);border-radius:14px;max-width:720px;width:100%;
+  max-height:90vh;overflow-y:auto;
+  box-shadow:0 24px 80px rgba(0,0,0,.4);
+  animation:modalPop .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes modalPop{from{opacity:0;transform:scale(.9) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-head{
+  background:var(--arsal-blue);padding:18px 32px;border-radius:14px 14px 0 0;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.modal-head-inner{display:flex;align-items:center;gap:14px;}
+.modal-head-divider{width:1px;height:36px;background:rgba(255,255,255,.25);flex-shrink:0;}
+.modal-head h3{font-family:'Inter',sans-serif;font-weight:700;font-size:1.05rem;color:#fff;line-height:1.3;}
+.modal-head p{font-size:.72rem;color:rgba(255,255,255,.6);margin-top:3px;font-style:italic;}
+.modal-close{
+  background:rgba(255,255,255,.15);border:none;color:#fff;
+  width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s;
+}
+.modal-close:hover{background:rgba(255,255,255,.25);}
+.modal-body{padding:28px 32px;}
+.report-sec{margin-bottom:22px;}
+.report-sec-title{
+  font-family:'Inter',sans-serif;font-size:.72rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--arsal-blue-light);
+  border-bottom:1px solid var(--border);padding-bottom:7px;margin-bottom:12px;
+}
+.report-row{
+  display:flex;gap:12px;padding:7px 0;
+  border-bottom:1px solid rgba(208,220,232,.4);font-size:.83rem;
+}
+.report-row:last-child{border-bottom:none;}
+.rk{color:var(--muted);min-width:200px;flex-shrink:0;font-weight:500;}
+.rv{color:var(--text);line-height:1.5;}
+.rv:empty::before{content:'—';color:var(--border);}
+.rv .badge-sim{background:#DCFCE7;color:#166534;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
+.rv .badge-nao{background:#FEE2E2;color:#991B1B;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
+.rv .badge-na{background:#F3F4F6;color:#6B7280;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
+.modal-foot{
+  padding:16px 32px 28px;display:flex;gap:10px;flex-wrap:wrap;
+}
+.btn-print{
+  border:1.5px solid var(--border);background:var(--surface);color:var(--text);
+  padding:9px 20px;border-radius:7px;cursor:pointer;font-size:.82rem;
+  font-family:'Inter',sans-serif;transition:all .2s;
+}
+.btn-print:hover{border-color:var(--arsal-blue);}
+.btn-new-fill{
+  background:var(--success);color:#fff;border:none;
+  padding:9px 22px;border-radius:7px;cursor:pointer;font-size:.82rem;
+  font-family:'Inter',sans-serif;font-weight:600;transition:all .2s;
+}
+.btn-new-fill:hover{filter:brightness(1.1);}
+.btn-pdf{
+  background:var(--arsal-blue);color:#fff;border:none;
+  padding:9px 22px;border-radius:7px;cursor:pointer;font-size:.82rem;
+  font-family:'Inter',sans-serif;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:6px;
+}
+.btn-pdf:hover{filter:brightness(1.12);}
+
+/* ACESSIBILIDADE – foco por teclado */
+:focus-visible{
+  outline:2px solid var(--arsal-blue-light);
+  outline-offset:2px;
+}
+.radio-chip:focus-within,
+.check-chip:focus-within{
+  outline:2px solid var(--arsal-blue-light);
+  outline-offset:2px;
+}
+
+/* TOAST */
+.toast{
+  position:fixed;bottom:24px;right:24px;z-index:400;
+  background:var(--text);color:#fff;padding:10px 18px;border-radius:8px;
+  font-size:.8rem;border-left:3px solid var(--arsal-gold);
+  opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateY(0);}
+
+/* MONITORAMENTO ESPECIAL */
+.pressure-table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:8px;}
+.pressure-table th{background:var(--arsal-blue);color:#fff;padding:8px 12px;text-align:left;font-weight:600;font-size:.78rem;}
+.pressure-table td{padding:7px 12px;border-bottom:1px solid var(--border);}
+.pressure-table tr:nth-child(even) td{background:var(--surface2);}
+.btn-add-row{
+  background:var(--arsal-blue);color:#fff;border:none;
+  padding:7px 16px;border-radius:6px;cursor:pointer;font-size:.78rem;
+  font-family:'Inter',sans-serif;margin-top:10px;transition:opacity .2s;
+}
+.btn-add-row:hover{opacity:.85;}
+
+@media(max-width:640px){
+  .hero{padding:36px 20px 32px;}
+  .hero h1{font-size:1.7rem;}
+  .cards-grid{padding:0 16px 32px;grid-template-columns:1fr 1fr;}
+  .section-title{padding:20px 16px 12px;}
+  .form-container{padding:20px 12px 60px;}
+  .form-meta-row{grid-template-columns:1fr;}
+  .modal-body,.modal-foot,.modal-head{padding-left:20px;padding-right:20px;}
+  .two-col-inputs{grid-template-columns:1fr;}
+  .rk{min-width:140px;}
+  .top-bar{padding:0 16px;}
+  .form-topbar{padding:10px 16px;}
+}
+@media(max-width:400px){
+  .cards-grid{grid-template-columns:1fr;}
+  .hero-stats{gap:18px;}
+  .conformidade-counts{gap:5px;}
+}
+@page {
+  margin: 10mm;
+  size: A4;
+}
+@media print{
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+  body > *:not(#reportModal) { display:none !important; }
+  #reportModal {
+    display:block !important;
+    position:static !important;
+    background:none !important;
+    backdrop-filter:none !important;
+    padding:0 !important;
+  }
+  .modal {
+    box-shadow:none !important;
+    max-height:none !important;
+    border-radius:0 !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+  .modal-head { border-radius:0 !important; }
+  .modal-foot, .modal-close { display:none !important; }
+  .print-logo-bar { display:flex !important; }
+}
+.print-logo-bar {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 14px 0 10px;
+  border-bottom: 2px solid #003B7A;
+  margin-bottom: 12px;
+}
+.print-logo-bar img { height: 50px; width: auto; object-fit: contain; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="logo-area" style="position:absolute;left:50%;transform:translateX(-50%);">
+    <img class="img-arsal-logo" alt="ARSAL" style="height:48px;width:auto;object-fit:contain;">
+    <div style="width:1px;height:38px;background:#ddd;margin:0 12px;" aria-hidden="true"></div>
+    <img class="img-gov-logo" alt="Governo de Alagoas" style="height:52px;width:auto;object-fit:contain;">
+  </div>
+  <div class="top-right">
+    <div class="save-pill" id="savePill"><span class="save-dot"></span><span id="saveText">Pronto</span></div>
+    <button class="btn-home" id="btnGoHome" style="display:none">← Formulários</button>
+  </div>
+</div>
+
+<!-- ===== TELA HOME ===== -->
+<div id="screen-home">
+  <div class="hero">
+    <div class="hero-inner">
+      <h1>Ficha de Inspeção de Saneamento</h1>
+      <p class="hero-subtitle">Gerência de Fiscalização Operacional de Saneamento (Gefsan)</p>
+      <p>Sistema digital de preenchimento e geração de relatórios para inspeções de saneamento do Estado de Alagoas.</p>
+    </div>
+  </div>
+
+  <div class="section-title">ABASTECIMENTO DE ÁGUA</div>
+  <div class="cards-grid">
+    <div class="form-card" onclick="openForm('captacao')" role="button" tabindex="0" aria-label="Abrir ficha: Manancial – Captação" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('captacao')">
+      <div class="card-tag tag-agua">💧 Água</div>
+      <div class="card-icon">🏞️</div>
+      <div class="card-title">Manancial – Captação</div>
+      <div class="card-desc">Inspeção de manancial superficial ou subterrâneo, perímetro de proteção, outorga e controle de vazões.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('poco')" role="button" tabindex="0" aria-label="Abrir ficha: Manancial – Poços" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('poco')">
+      <div class="card-tag tag-agua">💧 Água</div>
+      <div class="card-icon">🕳️</div>
+      <div class="card-title">Manancial – Poços</div>
+      <div class="card-desc">Verificação de infraestrutura, proteção sanitária, instalações elétricas e operação de poços subterrâneos.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('adutoras')" role="button" tabindex="0" aria-label="Abrir ficha: Adutoras" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('adutoras')">
+      <div class="card-tag tag-agua">💧 Água</div>
+      <div class="card-icon">🔧</div>
+      <div class="card-title">Adutoras</div>
+      <div class="card-desc">Manutenção, acessibilidade, macromedição, vazamentos e perdas ao longo das linhas de adução.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('ee')" role="button" tabindex="0" aria-label="Abrir ficha: Estação Elevatória de Água" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('ee')">
+      <div class="card-tag tag-agua">💧 Água</div>
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Estação Elevatória de Água (EEA)</div>
+      <div class="card-desc">Infraestrutura, operação e manutenção de estações elevatórias de água, eficiência energética e segurança.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('eta')" role="button" tabindex="0" aria-label="Abrir ficha: ETA – Tratamento de Água" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('eta')">
+      <div class="card-tag tag-agua">💧 Água</div>
+      <div class="card-icon">🏭</div>
+      <div class="card-title">ETA – Tratamento de Água</div>
+      <div class="card-desc">Coagulação, floculação, decantação, filtração, casa de química, laboratório e controle de qualidade.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('reservatorio')" role="button" tabindex="0" aria-label="Abrir ficha: Reservatório" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('reservatorio')">
+      <div class="card-tag tag-agua">💧 Água</div>
+      <div class="card-icon">🛢️</div>
+      <div class="card-title">Reservatório</div>
+      <div class="card-desc">Conservação, infraestrutura, controle de nível, limpeza, desinfecção e combate a perdas físicas.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('redes')" role="button" tabindex="0" aria-label="Abrir ficha: Redes de Distribuição" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('redes')">
+      <div class="card-tag tag-agua">💧 Água</div>
+      <div class="card-icon">🗺️</div>
+      <div class="card-title">Redes de Distribuição</div>
+      <div class="card-desc">Cadastro, pressões, continuidade, controle de perdas e qualidade da água na rede.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('pressao')" role="button" tabindex="0" aria-label="Abrir ficha: Pressão Manométrica" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('pressao')">
+      <div class="card-tag tag-monitoramento">📊 Monitoramento</div>
+      <div class="card-icon">📏</div>
+      <div class="card-title">Pressão Manométrica</div>
+      <div class="card-desc">Registro de medições de pressão: logradouro, hora, coordenadas e leitura manométrica.</div>
+      <div class="card-arrow">→</div>
+    </div>
+  </div>
+
+  <div class="section-title">ESGOTAMENTO SANITÁRIO</div>
+  <div class="cards-grid">
+    <div class="form-card" onclick="openForm('eee')" role="button" tabindex="0" aria-label="Abrir ficha: Elevatória de Esgoto" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('eee')">
+      <div class="card-tag tag-esgoto">🟣 Esgoto</div>
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">Elevatória de Esgoto (EEE)</div>
+      <div class="card-desc">Infraestrutura, operação e manutenção de estações elevatórias de esgoto sanitário.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('emissario')" role="button" tabindex="0" aria-label="Abrir ficha: Emissário" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('emissario')">
+      <div class="card-tag tag-esgoto">🟣 Esgoto</div>
+      <div class="card-icon">🌊</div>
+      <div class="card-title">Emissário</div>
+      <div class="card-desc">Licença ambiental, outorga, manutenção, vazamentos e controle de qualidade do efluente lançado.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('ete')" role="button" tabindex="0" aria-label="Abrir ficha: ETE – Tratamento de Esgoto" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('ete')">
+      <div class="card-tag tag-esgoto">🟣 Esgoto</div>
+      <div class="card-icon">🔬</div>
+      <div class="card-title">ETE – Tratamento de Esgoto</div>
+      <div class="card-desc">Fases preliminar, primária, secundária, terciária, manejo de lodo e controle de efluentes.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('redesesgoto')" role="button" tabindex="0" aria-label="Abrir ficha: Redes de Esgotamento" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('redesesgoto')">
+      <div class="card-tag tag-esgoto">🟣 Esgoto</div>
+      <div class="card-icon">🔄</div>
+      <div class="card-title">Redes de Esgotamento</div>
+      <div class="card-desc">Pontos críticos, manutenção preventiva, desobstrução, transbordamentos e ligações irregulares.</div>
+      <div class="card-arrow">→</div>
+    </div>
+  </div>
+
+  <div class="section-title">OPERACIONAL / COMERCIAL</div>
+  <div class="cards-grid">
+    <div class="form-card" onclick="openForm('comercial')" role="button" tabindex="0" aria-label="Abrir ficha: Inspeção Comercial/Operacional" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('comercial')">
+      <div class="card-tag tag-comercial">🟢 Comercial</div>
+      <div class="card-icon">🏢</div>
+      <div class="card-title">Inspeção Comercial/Operacional</div>
+      <div class="card-desc">Infraestrutura do escritório/loja, atendimento ao público, almoxarifado e serviço de campo.</div>
+      <div class="card-arrow">→</div>
+    </div>
+    <div class="form-card" onclick="openForm('acomp')" role="button" tabindex="0" aria-label="Abrir ficha: Acompanhamento Comercial/Operacional" onkeydown="if(event.key==='Enter'||event.key===' ')openForm('acomp')">
+      <div class="card-tag tag-comercial">🟢 Comercial</div>
+      <div class="card-icon">📋</div>
+      <div class="card-title">Acompanhamento Comercial/Operacional</div>
+      <div class="card-desc">Versão de acompanhamento da ficha comercial/operacional para registro sistemático.</div>
+      <div class="card-arrow">→</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TELA FORMULÁRIO ===== -->
+<div id="screen-form">
+  <div class="form-topbar">
+    <div class="form-breadcrumb">
+      <span class="bc-home" onclick="goHome()">Formulários</span>
+      <span class="bc-sep">›</span>
+      <span class="bc-current" id="breadcrumbName">—</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-label" id="progressLabel">0% preenchido</div>
+    </div>
+  </div>
+  <div class="form-container" id="formContainer"></div>
+</div>
+
+<!-- MODAL RELATÓRIO -->
+<div class="modal-bg" id="reportModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-inner">
+        <div>
+          <h3 id="reportMeta">Relatório de Inspeção</h3>
+          <p id="reportGerado"></p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="print-logo-bar">
+      <img class="img-arsal-logo" alt="ARSAL">
+      <div style="width:1px;height:40px;background:#ccc;" aria-hidden="true"></div>
+      <img class="img-gov-logo" alt="Governo de Alagoas">
+    </div>
+    <div class="modal-body" id="reportBody"></div>
+    <div class="modal-foot">
+      <button class="btn-pdf" onclick="exportPDF()">⬇ Exportar PDF</button>
+      <button class="btn-new-fill" onclick="closeModal()">✓ Fechar Relatório</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript>
+  <div style="position:fixed;inset:0;background:#003B7A;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;z-index:9999;font-family:sans-serif;padding:24px;">
+    <div>
+      <p style="font-size:1.4rem;font-weight:700;margin-bottom:10px;">JavaScript necessário</p>
+      <p style="opacity:.8">Esta aplicação requer JavaScript habilitado no navegador para funcionar.</p>
+    </div>
+  </div>
+</noscript>
+
+<script>
+// ============================================================
+// LOGOS BASE64
+// ============================================================
+const IMG_ARSAL = 'img/arsal.jpg';
+const IMG_ARSAL_PDF = 'img/arsal_relatorio.png';
+const IMG_GOV   = 'img/gov.png';
+
+// ============================================================
+// UTILS
+// ============================================================
+const $ = id => document.getElementById(id);
+let currentFormId = null;
+let saveTimer = null;
+
+function showToast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+function setSave(state){
+  const p=$('savePill'),t=$('saveText');
+  p.className='save-pill '+state;
+  if(state==='saving')t.textContent='Salvando…';
+  if(state==='saved')t.textContent='Salvo automaticamente';
+  if(state==='')t.textContent='Pronto';
+}
+
+function scheduleSave(){
+  setSave('saving');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{saveFormData();setSave('saved');updateProgress();},900);
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function storageKey(formId){return 'arsal_form_'+formId;}
+
+// Fix Bug 13: localStorage envolvido em try/catch (modo privado, cota excedida)
+function saveFormData(){
+  if(!currentFormId)return;
+  const data={};
+  document.querySelectorAll('[data-field]').forEach(el=>{
+    const k=el.dataset.field;
+    if(el.type==='radio')  { if(el.checked)data[k]=el.value; }
+    else if(el.type==='checkbox'){
+      if(!data[k])data[k]=[];
+      if(el.checked)data[k].push(el.value);
+    }
+    else data[k]=el.value;
+  });
+  // pressure table rows
+  const rows=document.querySelectorAll('.pt-row');
+  if(rows.length){
+    data['_pressure_rows']=Array.from(rows).map(r=>({
+      logradouro:r.querySelector('.pt-log')?.value||'',
+      hora:r.querySelector('.pt-hora')?.value||'',
+      coords:r.querySelector('.pt-coord')?.value||'',
+      pressao:r.querySelector('.pt-press')?.value||''
+    }));
+  }
+  try{
+    localStorage.setItem(storageKey(currentFormId),JSON.stringify(data));
+  }catch(e){
+    console.warn('Erro ao salvar no localStorage:',e);
+    showToast('Aviso: não foi possível salvar automaticamente.');
+  }
+}
+
+function loadFormData(){
+  if(!currentFormId)return;
+  let raw=null;
+  try{ raw=localStorage.getItem(storageKey(currentFormId)); }catch(e){ return; }
+  if(!raw)return;
+  let data;
+  try{ data=JSON.parse(raw); }catch(e){ return; }
+  // apply
+  document.querySelectorAll('[data-field]').forEach(el=>{
+    const k=el.dataset.field;
+    if(!data[k]&&data[k]!==0)return;
+    if(el.type==='radio'){
+      if(el.value===data[k]){
+        el.checked=true;
+        el.dataset.wasChecked='true';
+        applyChipStyle(el);
+      }
+    }
+    else if(el.type==='checkbox'){if(Array.isArray(data[k])&&data[k].includes(el.value)){el.checked=true;el.closest('.check-chip')?.classList.add('checked');}}
+    else{el.value=data[k];if(el.value)el.classList.add('filled');}
+  });
+  // reload pressure rows
+  if(data['_pressure_rows']){
+    const tbody=document.getElementById('pressureBody');
+    if(tbody){
+      tbody.innerHTML='';
+      data['_pressure_rows'].forEach(r=>addPressureRow(r));
+    }
+  }
+  updateProgress();
+}
+
+// ============================================================
+// PROGRESS
+// ============================================================
+function updateProgress(){
+  const all=document.querySelectorAll('[data-field]');
+  let filled=0,total=0;
+  const counted=new Set();
+  all.forEach(el=>{
+    const k=el.dataset.field;
+    if(el.type==='radio'){
+      if(!counted.has(k)){counted.add(k);total++;if(document.querySelector(`[data-field="${k}"]:checked`))filled++;}
+    } else if(el.type==='checkbox'){/* skip */}
+    else{total++;if(el.value.trim())filled++;}
+  });
+  const pct=total?Math.round(filled/total*100):0;
+  $('progressFill').style.width=pct+'%';
+  $('progressLabel').textContent=pct+'% preenchido';
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function openForm(id){
+  currentFormId=id;
+  $('screen-home').style.display='none';
+  $('screen-form').style.display='block';
+  $('btnGoHome').style.display='inline-block';
+  const def=FORMS[id];
+  $('breadcrumbName').textContent=def.title;
+  $('formContainer').innerHTML=renderForm(def);
+  attachEvents();
+  loadFormData();
+  setTimeout(()=>updateProgress(),50);
+}
+
+function goHome(){
+  saveFormData();
+  $('screen-home').style.display='block';
+  $('screen-form').style.display='none';
+  $('btnGoHome').style.display='none';
+  currentFormId=null;
+  setSave('');
+}
+$('btnGoHome').addEventListener('click',goHome);
+
+// inject base64 logos into all img tags
+document.querySelectorAll('.img-arsal-logo').forEach(el=>el.src=IMG_ARSAL);
+document.querySelectorAll('.img-gov-logo').forEach(el=>el.src=IMG_GOV);
+
+// ============================================================
+// RENDER ENGINE
+// ============================================================
+function renderForm(def){
+  let html=`<div class="form-header">`;
+  html+=`<div class="form-header-tag">${def.tag||'Ficha de Inspeção'}</div>`;
+  html+=`<h2>${def.title}</h2>`;
+  html+=`<div class="form-meta-row">
+    <div class="meta-field"><label>Prestadora</label><select data-field="meta_prestadora" class="text-input" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;font-family:inherit;">
+      <option value="" style="color:#333;background:#fff">Selecione a prestadora…</option>
+      <option value="BRK Ambiental RMM" style="color:#333;background:#fff">BRK Ambiental RMM</option>
+      <option value="Casal" style="color:#333;background:#fff">Casal</option>
+      <option value="Verde Ambiental" style="color:#333;background:#fff">Verde Ambiental</option>
+      <option value="Conasa Águas do Sertão" style="color:#333;background:#fff">Conasa Águas do Sertão</option>
+    </select></div>
+    <div class="meta-field"><label>Sistema</label><input type="text" data-field="meta_sistema" placeholder="Nome do sistema" class="text-input" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;"></div>
+    <div class="meta-field"><label>Data</label><input type="date" data-field="meta_data" class="text-input" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;"></div>
+    <div class="meta-field"><label>Servidor 1</label><input type="text" data-field="meta_serv1" placeholder="Nome e função" class="text-input" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;"></div>
+    <div class="meta-field"><label>Servidor 2</label><input type="text" data-field="meta_serv2" placeholder="Nome e função" class="text-input" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff;"></div>
+  </div></div>`;
+
+  // extra meta fields
+  if(def.extraMeta){
+    html+=`<div class="form-section"><div class="section-body">`;
+    def.extraMeta.forEach(f=>{
+      html+=`<div class="question-block"><div class="question-text">${f.label}</div>`;
+      if(f.type==='text')html+=`<input type="text" data-field="${f.key}" class="text-input" placeholder="${f.placeholder||''}">`;
+      if(f.type==='checkrow'){
+        html+=`<div class="check-row">`;
+        f.options.forEach(o=>html+=`<label class="check-chip"><input type="checkbox" data-field="${f.key}" value="${o}">${o}</label>`);
+        html+=`</div>`;
+      }
+      html+=`</div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  def.sections.forEach((sec,si)=>{
+    html+=`<div class="form-section" style="animation-delay:${si*.05}s">`;
+    html+=`<div class="section-head"><div class="section-num">${si+1}</div><div class="section-name">${sec.name}</div></div>`;
+    html+=`<div class="section-body">`;
+    // Fix Bug 14: prefixo "s{si}_" garante unicidade mesmo com nums duplicados entre seções
+    const sPrefix=`s${si}_`;
+    sec.questions.forEach(q=>{
+      html+=`<div class="question-block">`;
+      html+=`<div class="question-text"><span class="q-num">${q.num||''}.</span>${q.text}</div>`;
+      if(q.type==='radio'||!q.type){
+        const k=`q_${sPrefix}${q.num||q.key}`;
+        html+=`<div class="radio-row">
+          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" value="SIM"> ✓ SIM</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" value="NÃO"> ✗ NÃO</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" value="NÃO SE APLICA"> — N/A</label>
+        </div>
+        <textarea class="obs-input" data-field="${k}_obs" placeholder="Observação..." rows="1"></textarea>`;
+      } else if(q.type==='text'){
+        html+=`<input type="text" data-field="q_${sPrefix}${q.key}" class="text-input" placeholder="${q.placeholder||''}">`;
+      } else if(q.type==='twocol'){
+        html+=`<div class="two-col-inputs">`;
+        q.cols.forEach(c=>html+=`<div><div class="field-label">${c.label}</div><input type="text" data-field="q_${sPrefix}${c.key}" class="text-input" placeholder="${c.placeholder||''}"></div>`);
+        html+=`</div>`;
+      } else if(q.type==='checkrow'){
+        html+=`<div class="check-row">`;
+        q.options.forEach(o=>html+=`<label class="check-chip"><input type="checkbox" data-field="q_${sPrefix}${q.key}" value="${o}">${o}</label>`);
+        html+=`</div>`;
+      } else if(q.type==='info'){
+        // apenas texto, sem input
+      }
+      html+=`</div>`;
+    });
+    html+=`</div></div>`;
+  });
+
+  // Pressure table special
+  if(def.pressureTable){
+    html+=`<div class="form-section"><div class="section-head"><div class="section-num">+</div><div class="section-name">Registros de Pressão</div></div>
+    <div class="section-body">
+    <table class="pressure-table">
+      <thead><tr><th>Logradouro</th><th>Hora</th><th>Coordenadas</th><th>Pressão (mca)</th></tr></thead>
+      <tbody id="pressureBody"></tbody>
+    </table>
+    <button class="btn-add-row" onclick="addPressureRow()">+ Adicionar Linha</button>
+    </div></div>`;
+  }
+
+  html+=`<div class="considerations"><label>Considerações Adicionais</label><textarea data-field="consideracoes" placeholder="Registre observações adicionais, pontos de atenção ou notas relevantes..."></textarea></div>`;
+  html+=`<div class="form-actions">
+    <button class="btn-clear-form" onclick="clearCurrentForm()">Limpar Formulário</button>
+    <button class="btn-report" onclick="showReport()">Gerar Relatório →</button>
+  </div>`;
+  return html;
+}
+
+function addPressureRow(data){
+  const tbody=document.getElementById('pressureBody');
+  if(!tbody)return;
+  const tr=document.createElement('tr');
+  tr.className='pt-row';
+  tr.innerHTML=`<td><input class="text-input pt-log" value="${data?.logradouro||''}" placeholder="Logradouro" oninput="scheduleSave()"></td>
+    <td><input class="text-input pt-hora" value="${data?.hora||''}" placeholder="HH:MM" style="width:90px" oninput="scheduleSave()"></td>
+    <td><input class="text-input pt-coord" value="${data?.coords||''}" placeholder="Lat, Long" oninput="scheduleSave()"></td>
+    <td><input class="text-input pt-press" value="${data?.pressao||''}" placeholder="mca" style="width:90px" oninput="scheduleSave()"></td>`;
+  tbody.appendChild(tr);
+}
+
+// ============================================================
+// EVENTS
+// ============================================================
+function applyChipStyle(radio){
+  const chip=radio.closest('.radio-chip');
+  if(!chip)return;
+  const k=radio.dataset.field;
+  // Limpa todos os estilos de seleção dos irmãos
+  clearChipStyles(k);
+  // Aplica o estilo correto ao chip selecionado
+  if(radio.value==='SIM')chip.classList.add('sel-sim');
+  else if(radio.value==='NÃO')chip.classList.add('sel-nao');
+  else chip.classList.add('sel-na');
+}
+
+function clearChipStyles(k){
+  // Fix Bug 12: lista sem duplicatas
+  document.querySelectorAll(`[data-field="${k}"]`).forEach(r=>{
+    r.closest('.radio-chip')?.classList.remove('sel-sim','sel-nao','sel-na');
+  });
+}
+
+function attachEvents(){
+  document.querySelectorAll('input[type="radio"][data-field]').forEach(r=>{
+    // allow deselect on second click
+    r.addEventListener('click',()=>{
+      const siblings = document.querySelectorAll(`input[type="radio"][data-field="${r.dataset.field}"]`);
+      if(r.dataset.wasChecked==='true'){
+        // deselect
+        r.checked=false;
+        siblings.forEach(x=>x.dataset.wasChecked='false');
+        clearChipStyles(r.dataset.field);
+        scheduleSave();
+      } else {
+        // select new, reset all siblings first
+        siblings.forEach(x=>x.dataset.wasChecked='false');
+        r.dataset.wasChecked='true';
+        applyChipStyle(r);
+        scheduleSave();
+      }
+    });
+  });
+  document.querySelectorAll('input[type="checkbox"][data-field]').forEach(c=>{
+    c.addEventListener('change',()=>{c.closest('.check-chip')?.classList.toggle('checked',c.checked);scheduleSave();});
+  });
+  document.querySelectorAll('input[type="text"][data-field],input[type="date"][data-field],textarea[data-field]').forEach(el=>{
+    el.addEventListener('input',()=>{if(el.value.trim())el.classList.add('filled');else el.classList.remove('filled');scheduleSave();});
+  });
+  document.querySelectorAll('select[data-field]').forEach(el=>{
+    el.addEventListener('change',()=>{scheduleSave();});
+  });
+}
+
+function clearCurrentForm(){
+  if(!confirm('Limpar todos os campos deste formulário?'))return;
+  try{ localStorage.removeItem(storageKey(currentFormId)); }catch(e){ /* silencioso */ }
+  openForm(currentFormId);
+  showToast('Formulário limpo.');
+}
+
+// ============================================================
+// REPORT
+// ============================================================
+function showReport(){
+  saveFormData();
+  const def=FORMS[currentFormId];
+  let raw=null;
+  try{ raw=localStorage.getItem(storageKey(currentFormId)); }catch(e){}
+  const data=raw?JSON.parse(raw):{};
+  const now=new Date();
+  const dataExtenso=now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const hora=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  $('reportMeta').textContent=def.title.replace('Ficha de Inspeção: ','');
+  $('reportGerado').textContent=`Gerado em ${dataExtenso}, às ${hora}`;
+
+  // conformidade count — usa prefixo de seção para chaves únicas
+  let cSim=0,cNao=0,cNa=0;
+  def.sections.forEach((sec,si)=>sec.questions.forEach(q=>{
+    if(q.type&&q.type!=='radio')return;
+    const v=data[`q_s${si}_${q.num||q.key}`];
+    if(v==='SIM')cSim++;else if(v==='NÃO')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+  }));
+  const cTotal=cSim+cNao+cNa;
+  const pctSim=cTotal?Math.round(cSim/cTotal*100):0;
+  const pctNao=cTotal?Math.round(cNao/cTotal*100):0;
+  const pctNa=cTotal?Math.max(0,100-pctSim-pctNao):0;
+  const totalQ=def.sections.reduce((a,s)=>a+s.questions.filter(q=>!q.type||q.type==='radio').length,0);
+
+  let html='';
+  // Meta
+  html+=`<div class="report-sec"><div class="report-sec-title">Identificação</div>`;
+  html+=row('Prestadora',data.meta_prestadora);
+  html+=row('Sistema',data.meta_sistema);
+  html+=row('Data da Inspeção',data.meta_data);
+  html+=row('Servidor 1',data.meta_serv1);
+  html+=row('Servidor 2',data.meta_serv2);
+  html+=`</div>`;
+
+  def.sections.forEach((sec,si)=>{
+    const sPrefix=`s${si}_`;
+    html+=`<div class="report-sec"><div class="report-sec-title">${sec.name}</div>`;
+    sec.questions.forEach(q=>{
+      if(q.type==='text'){
+        html+=row(q.text,data[`q_${sPrefix}${q.key}`]);
+      } else if(q.type==='twocol'){
+        q.cols.forEach(c=>html+=row(c.label,data[`q_${sPrefix}${c.key}`]));
+      } else if(q.type==='checkrow'){
+        const vals=data[`q_${sPrefix}${q.key}`];
+        html+=row(q.text,Array.isArray(vals)?vals.join(', '):'');
+      } else if(q.type!=='info'){
+        const k=`q_${sPrefix}${q.num||q.key}`;
+        const v=data[k];
+        const obs=data[k+'_obs'];
+        let badge='';
+        if(v==='SIM')badge=`<span class="badge-sim">SIM</span>`;
+        else if(v==='NÃO')badge=`<span class="badge-nao">NÃO</span>`;
+        else if(v==='NÃO SE APLICA')badge=`<span class="badge-na">N/A</span>`;
+        html+=`<div class="report-row"><span class="rk">${q.num||''}. ${q.text}</span><span class="rv">${badge}${obs?` <em style="color:var(--muted);font-size:.8rem"> — ${obs}</em>`:''}</span></div>`;
+      }
+    });
+    html+=`</div>`;
+  });
+
+  // pressure table
+  if(data['_pressure_rows']&&data['_pressure_rows'].length){
+    html+=`<div class="report-sec"><div class="report-sec-title">Registros de Pressão</div>`;
+    data['_pressure_rows'].forEach((r,i)=>html+=row(`Ponto ${i+1}`,`${r.logradouro} | ${r.hora} | ${r.coords} | ${r.pressao} mca`));
+    html+=`</div>`;
+  }
+
+  if(data.consideracoes){html+=`<div class="report-sec"><div class="report-sec-title">Considerações Adicionais</div><div class="report-row"><span class="rv">${data.consideracoes}</span></div></div>`;}
+
+  // conformidade no final
+  html+=`<div class="conformidade-box">
+    <div class="conformidade-title">📊 Resultado de Conformidade</div>
+    <div class="conformidade-counts">
+      <span class="conf-badge conf-sim">✓ SIM: ${cSim}</span>
+      <span class="conf-badge conf-nao">✗ NÃO: ${cNao}</span>
+      <span class="conf-badge conf-na">— N/A: ${cNa}</span>
+      <span class="conf-badge conf-total">Total: ${cTotal}</span>
+    </div>
+    <div class="conformidade-bar-wrap">
+      <div class="conformidade-bar-track">
+        <div class="conformidade-bar-sim" style="width:${pctSim}%"></div>
+        <div class="conformidade-bar-nao" style="width:${pctNao}%"></div>
+        <div class="conformidade-bar-na" style="width:${pctNa}%"></div>
+      </div>
+      <div class="conf-pct">${pctSim}% de conformidade${cTotal<totalQ?' <span style="color:var(--muted);font-size:.78rem">(parcial)</span>':''}</div>
+    </div>
+  </div>`;
+
+  $('reportBody').innerHTML=html;
+  $('reportModal').classList.add('open');
+}
+
+function row(k,v){
+  return `<div class="report-row"><span class="rk">${k}</span><span class="rv">${v||''}</span></div>`;
+}
+function closeModal(){$('reportModal').classList.remove('open');}
+$('reportModal').addEventListener('click',e=>{if(e.target===$('reportModal'))closeModal();});
+
+async function exportPDF(){
+  if(!window.jspdf){showToast('Biblioteca PDF não carregada');return;}
+  const {jsPDF}=window.jspdf;
+
+  // ── Configurações gerais do documento
+  const doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+  const pageW=210, pageH=297;
+  const mL=14, mR=14;               // margens esquerda / direita
+  const mTop=46;                     // margem topo (abaixo do cabeçalho fixo)
+  const mBot=18;                     // margem rodapé
+  const contentW=pageW-mL-mR;       // largura útil
+  const lineH=6.5;                   // altura de linha padrão
+  let y=mTop;
+
+  // ── Paleta institucional
+  const C={
+    azul:       [0,59,122],
+    azulMid:    [0,91,181],
+    azulLight:  [25,118,210],
+    azulPale:   [232,240,253],
+    cinzaEsc:   [13,27,42],
+    cinzaMed:   [90,112,144],
+    cinzaLt:    [208,220,232],
+    cinzaPale:  [245,247,250],
+    branco:     [255,255,255],
+    verdeB:     [220,252,231],
+    verdeT:     [22,101,52],
+    vermelhoB:  [254,226,226],
+    vermelhoT:  [153,27,27],
+    naB:        [243,244,246],
+    naT:        [107,114,128],
+    ouro:       [180,130,20],
+  };
+
+  // ── Helpers de cor
+  const fill  =(...c)=>doc.setFillColor(...c);
+  const stroke=(...c)=>doc.setDrawColor(...c);
+  const color =(...c)=>doc.setTextColor(...c);
+  const font  =(f,s,sz)=>{doc.setFont(f||'helvetica',s||'normal');if(sz)doc.setFontSize(sz);};
+
+  // ── Verifica quebra de página — adiciona cabeçalho/rodapé em toda página nova
+  function checkY(needed=10){
+    if(y+needed>pageH-mBot){
+      drawFooter(doc.internal.getNumberOfPages());
+      doc.addPage();
+      drawHeader(false); // cabeçalho compacto nas páginas seguintes
+      y=mTop;
+    }
+  }
+
+  // ── Carrega imagem URL → base64 via canvas (fundo branco, exporta JPEG sem alpha)
+  async function urlToBase64(url){
+    return new Promise(res=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=img.naturalWidth;
+        canvas.height=img.naturalHeight;
+        const ctx=canvas.getContext('2d');
+        // Fundo branco explícito elimina qualquer canal alpha/transparência
+        ctx.fillStyle='#ffffff';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0);
+        res(canvas.toDataURL('image/jpeg',1.0));
+      };
+      img.onerror=()=>res(null);
+      img.src=url;
+    });
+  }
+
+  showToast('Gerando PDF…');
+
+  // ── Carrega logos e dados em paralelo
+  const [imgArsal,imgGov]=await Promise.all([urlToBase64(IMG_ARSAL_PDF),urlToBase64(IMG_GOV)]);
+  const def=FORMS[currentFormId];
+  let rawPdf=null;
+  try{rawPdf=localStorage.getItem(storageKey(currentFormId));}catch(e){}
+  const data=rawPdf?JSON.parse(rawPdf):{};
+  const now=new Date();
+  const dataGerado=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const horaGerado=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+  // ══════════════════════════════════════════════════════════════
+  // FUNÇÃO: CABEÇALHO (página 1 = completo | demais = compacto)
+  // ══════════════════════════════════════════════════════════════
+  function drawHeader(isPrimeira=true){
+    if(isPrimeira){
+      // Fundo branco do cabeçalho — mais compacto
+      fill(...C.branco); doc.rect(0,0,pageW,28,'F');
+
+      // Faixa azul escura topo (2 mm)
+      fill(...C.azul); doc.rect(0,0,pageW,2,'F');
+
+      // Logo ARSAL — esquerda (logo completa 2024, ratio ~2.5:1 → 40×16mm)
+      if(imgArsal){
+        doc.addImage(imgArsal,'JPEG',mL,6,40,16);
+      } else {
+        font('helvetica','bold',13); color(...C.azul);
+        doc.text('ARSAL',mL,18);
+      }
+
+      // Logo Governo — direita
+      // Dimensões reais: ~1000×320px → ratio 3.125:1 → altura 14mm → largura 44mm
+      if(imgGov){
+        doc.addImage(imgGov,'JPEG',pageW-mR-44,7,44,14);
+      } else {
+        font('helvetica','normal',7.5); color(...C.cinzaMed);
+        doc.text('Governo de Alagoas',pageW-mR,18,{align:'right'});
+      }
+
+      // Linha divisória entre logos
+      stroke(...C.cinzaLt);
+      doc.setLineWidth(0.3);
+      doc.line(pageW/2,5,pageW/2,25);
+
+      // Faixa azul institucional
+      fill(...C.azul); doc.rect(0,28,pageW,10,'F');
+      font('helvetica','bold',8.5); color(...C.branco);
+      doc.text('ARSAL – Agência Reguladora de Serviços Públicos do Estado de Alagoas',pageW/2,34,{align:'center'});
+
+      // Sub-faixa azul claro com órgão e data
+      fill(...C.azulPale); doc.rect(0,38,pageW,6,'F');
+      font('helvetica','bold',7.5); color(...C.azulMid);
+      doc.text('Gerência de Fiscalização Operacional de Saneamento – GEFSAN',mL,42.5);
+      font('helvetica','normal',7); color(...C.cinzaMed);
+      doc.text(`Emitido em ${dataGerado} às ${horaGerado}`,pageW-mR,42.5,{align:'right'});
+
+      // Linha separadora do conteúdo
+      stroke(...C.azulLight); doc.setLineWidth(0.5);
+      doc.line(0,44,pageW,44);
+
+    } else {
+      // ── Cabeçalho compacto (páginas 2+)
+      fill(...C.azul); doc.rect(0,0,pageW,9,'F');
+      font('helvetica','bold',7.5); color(...C.branco);
+      doc.text('ARSAL – Ficha de Inspeção',mL,6);
+      font('helvetica','normal',7); color(...C.branco);
+      doc.text(def.title.replace('Ficha de Inspeção: ','').replace('Ficha de Inspeção',''),pageW/2,6,{align:'center'});
+      doc.text(`${dataGerado}`,pageW-mR,6,{align:'right'});
+      fill(...C.azulPale); doc.rect(0,9,pageW,3,'F');
+      stroke(...C.cinzaLt); doc.setLineWidth(0.3);
+      doc.line(0,12,pageW,12);
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FUNÇÃO: RODAPÉ
+  // ══════════════════════════════════════════════════════════════
+  function drawFooter(pageNum){
+    const totalPgs=doc.internal.getNumberOfPages();
+    // Linha separadora
+    stroke(...C.azulLight); doc.setLineWidth(0.4);
+    doc.line(mL,pageH-mBot+1,pageW-mR,pageH-mBot+1);
+
+    // Fundo do rodapé
+    fill(...C.cinzaPale); doc.rect(0,pageH-mBot+2,pageW,mBot-2,'F');
+
+    // Coluna esquerda
+    font('helvetica','bold',7); color(...C.azul);
+    doc.text('ARSAL – Agência Reguladora de Serviços Públicos do Estado de Alagoas',mL,pageH-12);
+    font('helvetica','normal',6); color(...C.cinzaMed);
+    doc.text('Rua Engenheiro Roberto Gonçalves Menezes, n° 149, Centro, Maceió - AL, CEP: 57.020-680',mL,pageH-8);
+    doc.text('Telefone: +55 (82) 3315-2500  |  Ouvidoria: 0800 284-0429  |  www.arsal.al.gov.br',mL,pageH-4.5);
+
+    // Coluna direita — número de página
+    font('helvetica','bold',7.5); color(...C.azulMid);
+    doc.text(`Página ${pageNum}`,pageW-mR,pageH-7,{align:'right'});
+    font('helvetica','normal',6.5); color(...C.cinzaMed);
+    doc.text('Documento gerado eletronicamente',pageW-mR,pageH-3,{align:'right'});
+
+    // Faixa colorida na borda inferior
+    fill(...C.azul); doc.rect(0,pageH-1.5,pageW,1.5,'F');
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FUNÇÃO: Desenha título de seção
+  // ══════════════════════════════════════════════════════════════
+  function drawSectionTitle(titulo, numSec){
+    checkY(14);
+    // Fundo azul com número da seção
+    fill(...C.azul); doc.roundedRect(mL,y,contentW,8,1,1,'F');
+    // Número da seção em círculo
+    fill(...C.branco); doc.circle(mL+5.5,y+4,3.5,'F');
+    font('helvetica','bold',8); color(...C.azul);
+    doc.text(String(numSec),mL+5.5,y+4.9,{align:'center'});
+    // Título
+    font('helvetica','bold',9.5); color(...C.branco);
+    doc.text(titulo.toUpperCase(),mL+12,y+5.5);
+    y+=11;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FUNÇÃO: Linha de dado chave/valor
+  // ══════════════════════════════════════════════════════════════
+  function drawDataRow(chave,valor,zebra=false){
+    const lines=doc.splitTextToSize(String(valor||'—'),contentW-50);
+    const rowH=Math.max(7,lines.length*lineH+2);
+    checkY(rowH);
+    if(zebra){fill(...C.cinzaPale);doc.rect(mL,y,contentW,rowH,'F');}
+    // Borda esquerda colorida
+    fill(...C.azulLight); doc.rect(mL,y,0.8,rowH,'F');
+    font('helvetica','bold',8); color(...C.cinzaMed);
+    doc.text(chave,mL+3,y+5);
+    font('helvetica','normal',8.5); color(...C.cinzaEsc);
+    doc.text(lines,mL+50,y+5);
+    stroke(...C.cinzaLt); doc.setLineWidth(0.2);
+    doc.line(mL,y+rowH,mL+contentW,y+rowH);
+    y+=rowH;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FUNÇÃO: Bloco de questão (radio)
+  // ══════════════════════════════════════════════════════════════
+  let qRowIndex=0;
+  function drawQuestion(num,texto,resposta,obs){
+    const qLines=doc.splitTextToSize(`${num?num+'. ':''}${texto}`,contentW-32);
+    const obsLines=obs?doc.splitTextToSize('Obs.: '+obs,contentW-10):[];
+    const rowH=Math.max(8,qLines.length*lineH+2+(obsLines.length?(obsLines.length*5.5+3):0));
+    checkY(rowH+1);
+
+    // Fundo alternado (zebra)
+    if(qRowIndex%2===0){fill(250,252,255);doc.rect(mL,y,contentW,rowH,'F');}
+    else{fill(...C.branco);doc.rect(mL,y,contentW,rowH,'F');}
+
+    // Borda esquerda fina
+    fill(...C.cinzaLt); doc.rect(mL,y,0.5,rowH,'F');
+
+    // Número da questão em destaque
+    if(num){
+      font('helvetica','bold',7.5); color(...C.azulMid);
+      doc.text(String(num),mL+3.5,y+5,{align:'center'});
+    }
+
+    // Texto da pergunta
+    font('helvetica','normal',8.5); color(...C.cinzaEsc);
+    doc.text(qLines,mL+10,y+5);
+
+    // Badge de resposta (direita)
+    if(resposta){
+      const badgeW=20, badgeH=5.5, badgeX=mL+contentW-badgeW-1, badgeY=y+1.5;
+      let bgC,txC,txt;
+      if(resposta==='SIM'){bgC=C.verdeB;txC=C.verdeT;txt='SIM';}
+      else if(resposta==='NÃO'){bgC=C.vermelhoB;txC=C.vermelhoT;txt='NÃO';}
+      else{bgC=C.naB;txC=C.naT;txt='N/A';}
+      fill(...bgC); doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'F');
+      // Borda do badge
+      stroke(...txC); doc.setLineWidth(0.3);
+      doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'S');
+      font('helvetica','bold',7.5); color(...txC);
+      doc.text(txt,badgeX+badgeW/2,badgeY+3.8,{align:'center'});
+    }
+
+    // Observação (em itálico, menor)
+    if(obsLines.length){
+      const obsY=y+qLines.length*lineH+3;
+      fill(255,253,230); doc.rect(mL+10,obsY,contentW-12,obsLines.length*5.5+2,'F');
+      stroke(230,200,100); doc.setLineWidth(0.2);
+      doc.rect(mL+10,obsY,contentW-12,obsLines.length*5.5+2,'S');
+      font('helvetica','italic',7.5); color(...C.ouro);
+      doc.text(obsLines,mL+12.5,obsY+4);
+    }
+
+    // Linha separadora inferior
+    stroke(...C.cinzaLt); doc.setLineWidth(0.15);
+    doc.line(mL,y+rowH,mL+contentW,y+rowH);
+
+    y+=rowH;
+    qRowIndex++;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // FUNÇÃO: Campo de texto/checkrow no PDF
+  // ══════════════════════════════════════════════════════════════
+  function drawTextField(label,valor){
+    const lines=doc.splitTextToSize(String(valor||'—'),contentW-8);
+    const rowH=Math.max(13,lines.length*lineH+8);
+    checkY(rowH+2);
+    fill(...C.azulPale); doc.roundedRect(mL,y,contentW,rowH,1,1,'F');
+    stroke(...C.azulLight); doc.setLineWidth(0.3);
+    doc.roundedRect(mL,y,contentW,rowH,1,1,'S');
+    font('helvetica','bold',7.5); color(...C.azulMid);
+    doc.text(label,mL+3,y+5);
+    font('helvetica','normal',8.5); color(...C.cinzaEsc);
+    doc.text(lines,mL+3,y+11);
+    y+=rowH+2;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // INICIA CONSTRUÇÃO DO PDF
+  // ══════════════════════════════════════════════════════════════
+
+  // Cabeçalho página 1
+  drawHeader(true);
+
+  // ── CAPA / TÍTULO DO RELATÓRIO
+  // Título simples sem fundo colorido
+  font('helvetica','bold',14); color(...C.azul);
+  const tituloLines=doc.splitTextToSize(def.title.replace('Ficha de Inspeção: ','').replace('Ficha de Inspeção','Ficha de Inspeção'),contentW-8);
+  doc.text(tituloLines,mL,y+7);
+  // Linha decorativa abaixo do título
+  stroke(...C.azulMid); doc.setLineWidth(0.7);
+  doc.line(mL,y+10,mL+contentW,y+10);
+  y+=15;
+
+  // Tag do tipo de formulário
+  if(def.tag){
+    const tagText=def.tag.replace(/[🟣💧🟢📊]/gu,'').trim();
+    const tagW=doc.getTextWidth(tagText)+8;
+    fill(...C.azulPale); doc.roundedRect(mL,y,tagW,6,1,1,'F');
+    stroke(...C.azulLight); doc.setLineWidth(0.4);
+    doc.roundedRect(mL,y,tagW,6,1,1,'S');
+    font('helvetica','bold',7.5); color(...C.azulMid);
+    doc.text(tagText,mL+4,y+4.3);
+  }
+  y+=10;
+
+  // ── QUADRO DE IDENTIFICAÇÃO
+  checkY(50);
+  // Título do bloco
+  fill(...C.cinzaPale); doc.roundedRect(mL,y,contentW,7,1,1,'F');
+  stroke(...C.cinzaLt); doc.setLineWidth(0.4);
+  doc.roundedRect(mL,y,contentW,7,1,1,'S');
+  fill(...C.azulMid); doc.roundedRect(mL,y,3,7,0.5,0.5,'F');
+  font('helvetica','bold',9); color(...C.azul);
+  doc.text('IDENTIFICAÇÃO DO DOCUMENTO',mL+6,y+4.8);
+  y+=9;
+
+  // Grade de identificação 2 colunas
+  const idFields=[
+    ['Prestadora de Serviço',data.meta_prestadora],
+    ['Sistema Inspecionado',data.meta_sistema],
+    ['Data da Inspeção',data.meta_data?new Date(data.meta_data+'T12:00').toLocaleDateString('pt-BR'):'—'],
+    ['Servidor Responsável 1',data.meta_serv1],
+    ['Servidor Responsável 2',data.meta_serv2],
+  ];
+  idFields.forEach(([k,v],i)=>{
+    const zebra=i%2===0;
+    drawDataRow(k,v,zebra);
+  });
+  y+=4;
+
+  // ── EXTRA META (campos adicionais do formulário)
+  if(def.extraMeta&&def.extraMeta.length){
+    checkY(12);
+    fill(...C.cinzaPale); doc.roundedRect(mL,y,contentW,7,1,1,'F');
+    stroke(...C.cinzaLt); doc.setLineWidth(0.4);
+    doc.roundedRect(mL,y,contentW,7,1,1,'S');
+    fill(...C.azulMid); doc.roundedRect(mL,y,3,7,0.5,0.5,'F');
+    font('helvetica','bold',9); color(...C.azul);
+    doc.text('DADOS DO LOCAL INSPECIONADO',mL+6,y+4.8);
+    y+=9;
+    def.extraMeta.forEach(f=>{
+      if(f.type==='text'){
+        drawTextField(f.label,data[f.key]);
+      } else if(f.type==='checkrow'){
+        const vals=data[f.key];
+        drawTextField(f.label,Array.isArray(vals)?vals.join(', '):vals||'—');
+      }
+    });
+    y+=4;
+  }
+
+  // ── SEÇÕES DE INSPEÇÃO
+  qRowIndex=0;
+  def.sections.forEach((sec,si)=>{
+    const sPrefix=`s${si}_`;
+    drawSectionTitle(sec.name,si+1);
+
+    sec.questions.forEach(q=>{
+      if(q.type==='info')return;
+
+      if(q.type==='text'){
+        drawTextField(q.text,data[`q_${sPrefix}${q.key}`]);
+      } else if(q.type==='twocol'){
+        q.cols.forEach(c=>drawTextField(c.label,data[`q_${sPrefix}${c.key}`]));
+      } else if(q.type==='checkrow'){
+        const vals=data[`q_${sPrefix}${q.key}`];
+        drawTextField(q.text,Array.isArray(vals)?vals.join(', '):vals||'—');
+      } else {
+        // radio
+        const k=`q_${sPrefix}${q.num||q.key}`;
+        drawQuestion(q.num,q.text,data[k]||'',data[k+'_obs']||'');
+      }
+    });
+    y+=3;
+  });
+
+  // ── TABELA DE PRESSÃO (se houver)
+  if(data['_pressure_rows']&&data['_pressure_rows'].length){
+    checkY(16);
+    fill(...C.cinzaPale); doc.roundedRect(mL,y,contentW,7,1,1,'F');
+    stroke(...C.cinzaLt); doc.setLineWidth(0.4);
+    doc.roundedRect(mL,y,contentW,7,1,1,'S');
+    fill(...C.azulMid); doc.roundedRect(mL,y,3,7,0.5,0.5,'F');
+    font('helvetica','bold',9); color(...C.azul);
+    doc.text('REGISTROS DE PRESSÃO MANOMÉTRICA',mL+6,y+4.8);
+    y+=10;
+
+    // Cabeçalho da tabela
+    const cols=[{l:'Logradouro',w:72},{l:'Hora',w:22},{l:'Coordenadas',w:52},{l:'Pressão (mca)',w:36}];
+    let cx=mL;
+    fill(...C.azul);
+    doc.rect(mL,y,contentW,7,'F');
+    cols.forEach(c=>{
+      font('helvetica','bold',8); color(...C.branco);
+      doc.text(c.l,cx+2,y+4.8);
+      cx+=c.w;
+    });
+    y+=7;
+
+    data['_pressure_rows'].forEach((r,i)=>{
+      checkY(7);
+      if(i%2===0){fill(...C.cinzaPale);}else{fill(...C.branco);}
+      doc.rect(mL,y,contentW,6.5,'F');
+      stroke(...C.cinzaLt); doc.setLineWidth(0.15);
+      doc.rect(mL,y,contentW,6.5,'S');
+      const vals=[r.logradouro,r.hora,r.coords,r.pressao+' mca'];
+      cx=mL;
+      vals.forEach((v,vi)=>{
+        font('helvetica','normal',8); color(...C.cinzaEsc);
+        const tr=doc.splitTextToSize(v||'—',cols[vi].w-3);
+        doc.text(tr[0],cx+2,y+4.3);
+        cx+=cols[vi].w;
+      });
+      y+=6.5;
+    });
+    y+=5;
+  }
+
+  // ── CONSIDERAÇÕES ADICIONAIS
+  if(data.consideracoes){
+    checkY(20);
+    fill(...C.cinzaPale); doc.roundedRect(mL,y,contentW,7,1,1,'F');
+    stroke(...C.cinzaLt); doc.setLineWidth(0.4);
+    doc.roundedRect(mL,y,contentW,7,1,1,'S');
+    fill(...C.azulMid); doc.roundedRect(mL,y,3,7,0.5,0.5,'F');
+    font('helvetica','bold',9); color(...C.azul);
+    doc.text('CONSIDERAÇÕES ADICIONAIS',mL+6,y+4.8);
+    y+=10;
+    const cLines=doc.splitTextToSize(data.consideracoes,contentW-6);
+    const cH=cLines.length*6+6;
+    fill(255,253,240); doc.roundedRect(mL,y,contentW,cH,1,1,'F');
+    stroke(220,190,80); doc.setLineWidth(0.3);
+    doc.roundedRect(mL,y,contentW,cH,1,1,'S');
+    fill(220,190,80); doc.roundedRect(mL,y,3,cH,0.5,0.5,'F');
+    font('helvetica','italic',8.5); color(80,60,10);
+    doc.text(cLines,mL+5,y+5.5);
+    y+=cH+5;
+  }
+
+  // ── RESULTADO DE CONFORMIDADE
+  let cSim=0,cNao=0,cNa=0;
+  def.sections.forEach((sec,si)=>sec.questions.forEach(q=>{
+    if(q.type&&q.type!=='radio')return;
+    const v=data[`q_s${si}_${q.num||q.key}`];
+    if(v==='SIM')cSim++;else if(v==='NÃO')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+  }));
+  const cTotal=cSim+cNao+cNa;
+  const pctSim=cTotal?Math.round(cSim/cTotal*100):0;
+  const pctNao=cTotal?Math.round(cNao/cTotal*100):0;
+  const pctNa=cTotal?Math.max(0,100-pctSim-pctNao):0;
+  const totalQ=def.sections.reduce((a,s)=>a+s.questions.filter(q=>!q.type||q.type==='radio').length,0);
+  const pctPreench=totalQ?Math.round(cTotal/totalQ*100):0;
+
+  if(cTotal>0){
+    checkY(60);
+    // Título do bloco
+    fill(...C.cinzaPale); doc.roundedRect(mL,y,contentW,7,1,1,'F');
+    stroke(...C.cinzaLt); doc.setLineWidth(0.4);
+    doc.roundedRect(mL,y,contentW,7,1,1,'S');
+    fill(...C.azulMid); doc.roundedRect(mL,y,3,7,0.5,0.5,'F');
+    font('helvetica','bold',9); color(...C.azul);
+    doc.text('RESULTADO DE CONFORMIDADE',mL+6,y+4.8);
+    y+=10;
+
+    // Cards de contagem — 4 colunas
+    const cardW=(contentW-9)/4, cardH=20;
+    const cards=[
+      {l:'Conformes (SIM)',n:cSim,pct:pctSim+'%',bg:C.verdeB,tx:C.verdeT,brd:[34,197,94]},
+      {l:'Não Conformes (NÃO)',n:cNao,pct:pctNao+'%',bg:C.vermelhoB,tx:C.vermelhoT,brd:[239,68,68]},
+      {l:'Não Aplicável (N/A)',n:cNa,pct:pctNa+'%',bg:C.naB,tx:C.naT,brd:[156,163,175]},
+      {l:'Total Respondido',n:cTotal,pct:pctPreench+'%',bg:C.azulPale,tx:C.azulMid,brd:[...C.azulLight]},
+    ];
+    cards.forEach((c,i)=>{
+      const cx=mL+i*(cardW+3);
+      fill(...c.bg); doc.roundedRect(cx,y,cardW,cardH,1.5,1.5,'F');
+      stroke(...c.brd); doc.setLineWidth(0.5);
+      doc.roundedRect(cx,y,cardW,cardH,1.5,1.5,'S');
+      // Faixa colorida topo do card
+      fill(...c.brd); doc.roundedRect(cx,y,cardW,3,1.5,1.5,'F');
+      doc.rect(cx,y+1.5,cardW,1.5,'F');
+      // Número grande
+      font('helvetica','bold',18); color(...c.tx);
+      doc.text(String(c.n),cx+cardW/2,y+12.5,{align:'center'});
+      // Percentual
+      font('helvetica','bold',8); color(...c.brd);
+      doc.text(c.pct,cx+cardW/2,y+17,{align:'center'});
+      // Label
+      font('helvetica','normal',6.5); color(...c.tx);
+      const lLines=doc.splitTextToSize(c.l,cardW-3);
+      // posiciona label no topo
+      doc.text(c.l.split('(')[0].trim(),cx+cardW/2,y+6.5,{align:'center'});
+    });
+    y+=cardH+5;
+
+    // Barra de progresso empilhada — com legenda
+    checkY(20);
+    font('helvetica','bold',8); color(...C.cinzaMed);
+    doc.text('Distribuição das respostas:',mL,y+4);
+    y+=6;
+
+    const barX=mL, barY=y, barW=contentW, barH=8;
+    // Track
+    fill(...C.cinzaLt); doc.roundedRect(barX,barY,barW,barH,2,2,'F');
+    // Segmentos
+    let off=0;
+    if(pctSim>0){
+      const w=barW*pctSim/100;
+      fill(34,197,94); doc.roundedRect(barX+off,barY,w,barH,2,2,'F');
+      doc.rect(barX+off+w-2,barY,2,barH,'F');
+      off+=w;
+    }
+    if(pctNao>0){
+      const w=barW*pctNao/100;
+      fill(239,68,68);
+      if(off>0)doc.rect(barX+off,barY,w,barH,'F');
+      else doc.roundedRect(barX+off,barY,w,barH,2,2,'F');
+      doc.rect(barX+off+w-2,barY,2,barH,'F');
+      off+=w;
+    }
+    if(pctNa>0){
+      const w=barW*pctNa/100;
+      fill(156,163,175);
+      doc.rect(barX+off,barY,w,barH,'F');
+    }
+    // Borda da barra
+    stroke(...C.cinzaMed); doc.setLineWidth(0.3);
+    doc.roundedRect(barX,barY,barW,barH,2,2,'S');
+    y+=barH+3;
+
+    // Legenda
+    const legendas=[
+      [34,197,94,`Conformes: ${pctSim}%`],
+      [239,68,68,`Não Conformes: ${pctNao}%`],
+      [156,163,175,`Não Aplicáveis: ${pctNa}%`],
+    ];
+    legendas.forEach((lg,i)=>{
+      fill(lg[0],lg[1],lg[2]); doc.rect(mL+i*58,y,4,4,'F');
+      font('helvetica','normal',7.5); color(...C.cinzaEsc);
+      doc.text(lg[3],mL+i*58+6,y+3.3);
+    });
+    y+=8;
+  }
+
+
+
+  // ══════════════════════════════════════════════════════════════
+  // RODAPÉ EM TODAS AS PÁGINAS
+  // ══════════════════════════════════════════════════════════════
+  const totalPages=doc.internal.getNumberOfPages();
+  for(let i=1;i<=totalPages;i++){
+    doc.setPage(i);
+    drawFooter(i);
+    // Número total de páginas no rodapé
+    font('helvetica','normal',6.5); color(...C.cinzaMed);
+    doc.text(`de ${totalPages}`,pageW-mR+1,pageH-7);
+  }
+
+  // ── Salva o arquivo
+  const prestadora=(data.meta_prestadora||'inspecao').replace(/\s+/g,'_');
+  const dateStr=(data.meta_data||now.toISOString().slice(0,10)).replace(/-/g,'');
+  doc.save(`ARSAL_GEFSAN_${currentFormId.toUpperCase()}_${prestadora}_${dateStr}.pdf`);
+  showToast('PDF gerado com sucesso!');
+}
+
+// ============================================================
+// FORM DEFINITIONS
+// ============================================================
+const FORMS = {
+
+captacao:{
+  title:'Ficha de Inspeção: Manancial – Captação',
+  tag:'💧 Abastecimento de Água',
+  extraMeta:[
+    {label:'Identificação do Manancial',key:'id_manancial',type:'text',placeholder:'Nome ou identificação'},
+    {label:'Tipo de Captação',key:'tipo_captacao',type:'checkrow',options:['Superficial','Subterrâneo']}
+  ],
+  sections:[
+    {name:'I. Manancial',questions:[
+      {num:'01',text:'Existe sinalização identificando o manancial e que aquela é uma área destinada ao abastecimento público?'},
+      {num:'02',text:'Há outorga de captação e obra hídrica?'},
+      {num:'03',text:'Existe um perímetro de proteção sanitária da área do manancial, principalmente próximo à captação?'},
+      {num:'04',text:'Há eutrofização do manancial?'},
+      {num:'05',text:'É feito monitoramento de cianobactérias e clorofila A?'},
+      {num:'07',text:'Observar potenciais fontes poluidoras, avaliar uso e ocupação da bacia do manancial?'},
+      {num:'08',text:'O volume captado atualmente garante o abastecimento de água sem haver colapso no abastecimento?'},
+      {num:'09',text:'Há controle de nível e de vazões na barragem?'},
+      {num:'10',text:'A acessibilidade do local está em boas condições?'},
+      {num:'11',text:'A infraestrutura do local está em boas condições?'},
+      {num:'12',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+    ]}
+  ]
+},
+
+poco:{
+  title:'Ficha de Inspeção: Manancial – Poços',
+  tag:'💧 Abastecimento de Água',
+  extraMeta:[
+    {label:'Identificação do Manancial',key:'id_manancial',type:'text'},
+    {label:'Tipo de Captação',key:'tipo_captacao',type:'checkrow',options:['Subterrâneo','Outro']}
+  ],
+  sections:[
+    {name:'I. Infraestrutura, operação e manutenção',questions:[
+      {num:'01',text:'Existe sinalização identificando o poço?'},
+      {num:'02',text:'O acesso ao poço é fácil?'},
+      {num:'03',text:'Existe iluminação para trabalhos noturnos?'},
+      {num:'04',text:'Existe tampa de proteção do poço?'},
+      {num:'05',text:'A saliência do tubo do poço acima da laje é >= 50cm?'},
+      {num:'06',text:'Existe laje de proteção ao redor do poço (A>=1m² e espessura >= 15cm)?'},
+      {num:'07',text:'Existe declividade do centro para borda da laje de proteção?'},
+      {num:'08',text:'Há facilidade da realização de trabalhos de manutenção no poço?'},
+      {num:'09',text:'As instalações elétricas do poço estão adequadas?'},
+      {num:'10',text:'As condições de manutenção do quadro de força são boas?'},
+      {num:'11',text:'Existe horímetro em funcionamento?'},
+      {num:'12',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+    ]}
+  ]
+},
+
+adutoras:{
+  title:'Ficha de Inspeção: Adutoras',
+  tag:'💧 Abastecimento de Água',
+  extraMeta:[
+    {label:'Classificação',key:'classif',type:'checkrow',options:['Água Tratada','Água Bruta']},
+    {label:'Tipo',key:'tipo_adut',type:'checkrow',options:['Gravidade','Recalque','Mistas']},
+    {label:'Localização',key:'loc_adut',type:'checkrow',options:['Manancial','ETA','Reservatório de Distribuição','Reforço na Adução','Rede de Distribuição']}
+  ],
+  sections:[
+    {name:'I. Infraestrutura, operação e manutenção',questions:[
+      {num:'01',text:'É feita manutenção periódica nas adutoras?'},
+      {num:'02',text:'Existe facilidade de acesso para manutenção ao longo da linha de adução?'},
+      {num:'03',text:'Existem componentes instalados na adutora (ventosas, descargas etc.)? Anotar quais.'},
+      {num:'04',text:'As caixas de proteção dos componentes estão em boas condições?'},
+      {num:'05',text:'Existe macromedição?'},
+      {num:'06',text:'Existem estações pitométricas?'},
+      {num:'07',text:'Há problemas de vazamentos na adutora?'},
+      {num:'08',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+      {num:'09',text:'Há plano de combate às perdas físicas?'},
+    ]}
+  ]
+},
+
+ee:{
+  title:'Ficha de Inspeção: Estação Elevatória (EE)',
+  tag:'💧 Abastecimento de Água',
+  extraMeta:[
+    {label:'Identificação da EE',key:'id_ee',type:'text'}
+  ],
+  sections:[
+    {name:'I. Infraestrutura',questions:[
+      {num:'01',text:'Existe sinalização identificando a área da Estação Elevatória (EE)?'},
+      {num:'02',text:'A EE está em bom estado de conservação e bem protegida?'},
+      {num:'03',key:'motobombas',type:'twocol',text:'Dados das Motobombas',cols:[{label:'Qtd total de conjunto motobombas',key:'ee_qtd_motob',placeholder:'Quantidade'},{label:'Potência e Vazão',key:'ee_potencia',placeholder:'kW / m³/h'}]},
+      {num:'04',text:'A estação elevatória é automatizada?'},
+      {num:'05',text:'Há caixas de passagem, ventosas, descargas e blocos de ancoragem? Qual o estado de conservação?'},
+      {num:'06',key:'destino',type:'text',text:'Local para onde a água é bombeada:',placeholder:'Destino do bombeamento'},
+    ]},
+    {name:'II. Operação e manutenção',questions:[
+      {num:'07',text:'Há facilidade da realização de trabalhos de manutenção na EE com livre circulação?'},
+      {num:'08',text:'Existe boa iluminação, inclusive natural na EE?'},
+      {num:'09',text:'A EE permite livre circulação do ar?'},
+      {num:'10',text:'As condições de manutenção do quadro de força são boas?'},
+      {num:'11',text:'Existe horímetro?'},
+      {num:'12',text:'Existe bomba reserva?'},
+      {num:'13',text:'Existem dispositivos de proteção anti-golpe (torre de equilíbrio, TAU, válvula de retenção, volante de inércia, hidropneumático)?'},
+      {num:'14',text:'As bombas operam em revezamento e respeitando intervalo mínimo para duas partidas sucessivas?'},
+      {num:'15',text:'Há manômetros, pitometria ou macromedidores na saída das adutoras?'},
+      {num:'16',text:'Há registros e controle de transitórios hidráulicos?'},
+      {num:'17',text:'Qual a real condição de impermeabilização?'},
+      {num:'18',text:'Há vazamentos aparentes?'},
+      {num:'19',text:'Há regularidade das pressões?'},
+      {num:'20',text:'É realizada a limpeza das adutoras quanto à presença de incrustações?'},
+      {num:'21',text:'Há estações do tipo booster para recalque entre dois reservatórios ou reforço na rede?'},
+      {num:'22',text:'A elevatória tem eficiência energética certificada?'},
+      {num:'23',text:'Apresenta tensões oscilantes e sobreaquecimento dos motores?'},
+      {num:'24',text:'Os motores entram em curto constantemente?'},
+      {num:'25',text:'A conta de energia é muito elevada?'},
+      {num:'26',text:'Há mecanismos para redução da altura manométrica, redução do volume de água e aumento do desempenho dos motores?'},
+      {num:'27',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+      {num:'28',text:'Existem extintores de incêndio (verificar a validade)?'},
+    ]}
+  ]
+},
+
+eta:{
+  title:'Ficha de Inspeção: ETA – Estação de Tratamento de Água',
+  tag:'💧 Abastecimento de Água',
+  extraMeta:[
+    {label:'Identificação da ETA',key:'id_eta',type:'text'},
+    {label:'Quanto ao tratamento',key:'tipo_trat_eta',type:'checkrow',options:['Desinfecção','Simplificado','Convencional','Avançado']}
+  ],
+  sections:[
+    {name:'I. Licença Ambiental',questions:[{num:'01',text:'A ETA possui licenciamento ambiental para funcionamento?'}]},
+    {name:'II. Área da ETA',questions:[
+      {num:'02',text:'Existe placa indicativa do local, identificando a área pertencente à Prestadora?'},
+      {num:'03',text:'O acesso à ETA está em boas condições?'},
+      {num:'04',text:'A área está devidamente cercada/isolada?'},
+      {num:'05',text:'As condições de acesso e a limpeza da área externa são boas?'},
+    ]},
+    {name:'III. Coagulação',questions:[
+      {num:'07',key:'vazao_eta',type:'text',text:'Qual a vazão de operação da ETA?',placeholder:'m³/h'},
+      {num:'08',text:'Há dispositivo de medição de vazão?'},
+      {num:'09',key:'ponto_coag',type:'text',text:'Qual o ponto de aplicação do agente coagulante?',placeholder:'Descreva o ponto'},
+      {num:'10',text:'É feito o controle do gradiente de velocidade e tempo de mistura rápida?'},
+      {num:'11',text:'É realizada pré-oxidação da água bruta?'},
+      {num:'12',key:'mecan_coag',type:'text',text:'Qual o mecanismo de coagulação?',placeholder:'Descreva o mecanismo'},
+      {num:'14',text:'A coagulação é do tipo hidráulica ou mecanizada?'},
+      {num:'15',text:'Estão garantidas condições de acesso e segurança à fase de coagulação?'},
+    ]},
+    {name:'IV. Floculação',questions:[
+      {num:'16',key:'tipo_floc',type:'checkrow',text:'Tipo de Floculação',options:['Hidráulica','Mecanizada']},
+      {num:'17',text:'É feito o controle de parâmetros operacionais como gradiente de velocidade e tempo de mistura/agitação?'},
+      {num:'18',key:'period_floc',type:'text',text:'Qual a periodicidade da drenagem/descarga dos floculadores?',placeholder:'Ex: semanal, quinzenal'},
+      {num:'19',key:'dest_floc',type:'text',text:'Qual a destinação da descarga dos floculadores?',placeholder:'Local de destino'},
+      {num:'20',text:'É realizada a limpeza manual de calhas, laterais e do many-fold de transição?'},
+      {num:'21',text:'Há manutenção para os registros de descargas dos floculadores?'},
+      {num:'22',text:'Estão garantidas condições de acesso e segurança aos floculadores?'},
+    ]},
+    {name:'V. Decantação',questions:[
+      {num:'23',key:'tipo_dec',type:'checkrow',text:'Tipo de Decantador',options:['Fluxo Horizontal','Alta Taxa','Manta de Lodo']},
+      {num:'24',text:'É observada a ressuspensão de flocos nas proximidades da calha de água decantada?'},
+      {num:'25',text:'É realizada a limpeza das calhas de água decantada?'},
+      {num:'26',text:'Foram observados sinais de fotossíntese ou digestão anaeróbia das lamas capaz de comprometer a qualidade da água?'},
+      {num:'27',text:'É realizada a limpeza dos decantadores?'},
+      {num:'29',text:'Os decantadores estão em boas condições?'},
+      {num:'30',text:'As escadas de acesso estão em boas condições de uso?'},
+      {num:'31',text:'Existem passarelas com guardas-corpos de proteção no decantador para segurança do operador?'},
+    ]},
+    {name:'VI. Filtração',questions:[
+      {num:'32',key:'tipo_filtro',type:'checkrow',text:'Tipo de camada do filtro',options:['Simples (areia)','Dupla (carvão antracito e areia)']},
+      {num:'33',text:'Há controle de nível para lavagem dos filtros?'},
+      {num:'34',text:'Há um plano de escalonamento da lavagem dos filtros?'},
+      {num:'35',text:'São realizadas análises periódicas de água filtrada conforme plano de monitoramento?'},
+      {num:'36',text:'Há sinais de curtos-circuitos e caminhos preferenciais?'},
+      {num:'37',text:'Os filtros estão em boas condições?'},
+      {num:'38',text:'As escadas de acesso estão em boas condições de uso?'},
+      {num:'39',text:'Há guardas-corpos de segurança nas instalações de filtração?'},
+      {num:'41',text:'Há vazamentos nas tubulações dos filtros?'},
+      {num:'43',text:'O volume de água de lavagem é menor que 5% do total produzido?'},
+      {num:'44',text:'As águas de lavagem dos filtros e descarga de fundo estão sendo dispostas em local adequado?'},
+      {num:'46',text:'Há presença de bolhas na filtração?'},
+      {num:'47',text:'Há carreamento do leito filtrante?'},
+    ]},
+    {name:'VII. Casa de Química (NBR13295)',questions:[
+      {num:'48',text:'As condições de higiene e limpeza são boas?'},
+      {num:'49',text:'A estrutura do prédio da casa de química está aparentemente segura?'},
+      {num:'50',text:'Existe almoxarifado para acondicionamento de produtos químicos?'},
+      {num:'51',text:'O local possui condições apropriadas para armazenamento do produto?'},
+      {num:'53',text:'Os produtos químicos têm registros no MS e estão dentro do prazo de validade?'},
+      {num:'54',text:'Os tanques de dosagem de produtos químicos e bomba dosadora estão em boas condições?'},
+      {num:'55',text:'Existe manutenção preventiva dos equipamentos dosadores?'},
+      {num:'56',text:'No caso de cloro gasoso, a área de dosagem oferece condições de segurança?'},
+      {num:'57',text:'Em caso de vazamento de cloro, existem EPIs adequados?'},
+      {num:'58',text:'Os operadores receberam treinamento para manuseio de produtos químicos?'},
+      {num:'59',text:'Existe chuveiro de emergência e lava olhos dentro do laboratório?'},
+    ]},
+    {name:'VIII. Laboratório',questions:[
+      {num:'60',text:'Existe Teste do Jarro para identificar a dosagem ótima de coagulante?'},
+      {num:'61',text:'O pH de coagulação é monitorado?'},
+      {num:'62',text:'A avaliação dos parâmetros (pH, cor, turbidez, cloro, coliformes e E. coli) segue o plano de vigilância?'},
+      {num:'63',text:'As condições de organização e limpeza do laboratório são boas?'},
+      {num:'64',text:'Existem registros sobre a qualidade da água bruta?'},
+      {num:'65',text:'Existe equipamento turbidímetro em bom estado de conservação?'},
+      {num:'66',text:'O turbidímetro está calibrado?'},
+      {num:'67',text:'Existe equipamento calorímetro em bom estado de conservação?'},
+      {num:'68',text:'Existe balança analítica?'},
+      {num:'69',text:'Existe equipamento peagômetro?'},
+      {num:'70',text:'O peagômetro está calibrado?'},
+      {num:'71',text:'Existe autoclave?'},
+      {num:'72',text:'Existem outros equipamentos para análises bacteriológicas?'},
+      {num:'73',text:'Existem armários para guardar reagentes e vidrarias?'},
+      {num:'75',text:'Os reagentes estão dentro do prazo de validade?'},
+      {num:'77',text:'São feitas análises na saída da ETA para controle diário da qualidade da água?'},
+      {num:'80',text:'Os equipamentos são calibrados por empresa especializada?'},
+      {num:'81',text:'O operador está apto para operar os aparelhos do laboratório da ETA?'},
+      {num:'82',text:'Existe chuveiro de emergência e lava olhos dentro do laboratório?'},
+    ]},
+    {name:'IX. Outros',questions:[
+      {num:'59b',text:'As caixas de proteção, inspeção ou passagem existentes possuem tampas adequadas?'},
+      {num:'60b',text:'Existem vazamentos nas instalações (tubos, registros etc.)?'},
+      {num:'61',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+      {num:'62',text:'Existem extintores de incêndio (verificar a validade)?'},
+    ]},
+  ]
+},
+
+reservatorio:{
+  title:'Ficha de Inspeção: Reservatório',
+  tag:'💧 Abastecimento de Água',
+  extraMeta:[
+    {label:'Identificação / Capacidade de Reservação',key:'id_res',type:'text',placeholder:'Nome e capacidade em m³'},
+    {label:'Função',key:'func_res',type:'checkrow',options:['Captação','Distribuição']},
+    {label:'Localização no Sistema',key:'loc_res',type:'checkrow',options:['Montante','Jusante (reserva)','Montante e Jusante (intermediário)']},
+    {label:'Localização no Terreno',key:'loc_terreno',type:'checkrow',options:['Enterrado','Semi-enterrado','Apoiado','Elevado']}
+  ],
+  sections:[
+    {name:'I. Isolamento, conservação e limpeza da área',questions:[
+      {num:'01',text:'Existe placa indicativa do local, identificando a área pertencente à prestadora?'},
+      {num:'02',text:'A área está devidamente cercada?'},
+      {num:'03',text:'As condições de limpeza da área são boas?'},
+    ]},
+    {name:'II. Infraestrutura, instalações e funcionamento',questions:[
+      {num:'04',text:'As condições de conservação do reservatório são boas (sem rachaduras, corrosão, infiltrações e vazamentos aparentes)?'},
+      {num:'05',text:'Em caso negativo, existem rachaduras que possam comprometer a estrutura?'},
+      {num:'06',text:'Há pára-raios e sinalização noturna?'},
+      {num:'07',text:'As caixas de proteção, de inspeção ou de passagem existentes possuem tampas adequadas?'},
+      {num:'08',text:'Existe escada de acesso ao reservatório em boas condições de uso?'},
+      {num:'09',text:'Há guarda-corpo na escada externa dos reservatórios elevados?'},
+      {num:'10',text:'Há guarda-corpo na laje de cobertura?'},
+      {num:'11',text:'O reservatório possui cobertura adequada, com as tampas de inspeção em boas condições?'},
+      {num:'12',text:'Há tubulação de ventilação nos reservatórios?'},
+      {num:'13',text:'Existe tubo extravasor?'},
+      {num:'14',text:'Existe tubo de descarga de fundo?'},
+      {num:'15',key:'tipo_tub',type:'checkrow',text:'Tipo de tubulação de entrada',options:['Livre','Afogada']},
+      {num:'16',text:'Existem vazamentos nas instalações (tubos, registros etc.)?'},
+      {num:'17',text:'Existe controle de nível?'},
+      {num:'18',text:'Há macro medidor na saída do reservatório?'},
+      {num:'19',text:'Há controle de nível para assegurar volume mínimo e evitar vórtices?'},
+      {num:'20',text:'Ocorre extravasamento do reservatório?'},
+      {num:'21',text:'É realizada a limpeza e desinfecção periódica?'},
+      {num:'22',text:'A água de lavagem é medida ou estimada?'},
+      {num:'23',text:'A água de lavagem é lançada em local adequado?'},
+      {num:'24',text:'O reservatório atende à demanda máxima diária?'},
+      {num:'25',text:'O reservatório garante reserva de incêndio?'},
+      {num:'26',text:'O reservatório tem volume útil suficiente para suportar falta de energia e manutenções?'},
+      {num:'28',text:'Existe aplicação de desinfetante no reservatório?'},
+      {num:'29',text:'Caso negativo, há necessidade de cloração adicional no reservatório?'},
+      {num:'30',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+      {num:'31',text:'Há plano de combate às perdas físicas?'},
+    ]}
+  ]
+},
+
+redes:{
+  title:'Ficha de Inspeção: Redes de Distribuição',
+  tag:'💧 Abastecimento de Água',
+  sections:[
+    {name:'I. Cadastro',questions:[{num:'01',text:'Existe cadastro atualizado da rede?'}]},
+    {name:'II. Modelagem',questions:[
+      {num:'02',text:'A rede é malhada, ramificada ou mista?'},
+      {num:'03',text:'Existe micromedição de 100% na rede?'},
+    ]},
+    {name:'III. Descarga de rede',questions:[
+      {num:'04',text:'Existem pontos de descargas na rede?'},
+      {num:'05',text:'Os pontos de descargas de redes estão devidamente protegidos?'},
+    ]},
+    {name:'IV. Pressões',questions:[
+      {num:'06',text:'Existem áreas críticas de baixas pressões na rede?'},
+      {num:'07',text:'As pressões mínimas e máximas são obedecidas?'},
+    ]},
+    {name:'V. Continuidade',questions:[
+      {num:'08',text:'O abastecimento é contínuo?'},
+      {num:'09',text:'A população é comunicada de possíveis paralisações?'},
+      {num:'10',text:'Existem registros de manobras para manutenção da rede?'},
+      {num:'11',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+    ]},
+    {name:'VI. Perdas',questions:[
+      {num:'12',text:'Existe alguma medida em relação ao controle de perdas?'},
+    ]},
+    {name:'VII. Controle da qualidade',questions:[
+      {num:'13',text:'Na execução do controle diário, os principais parâmetros de qualidade (CLORO, COR, TURBIDEZ, PH, COLIFORMES E E.COLI) estão dentro dos padrões em todos os pontos da rede?'},
+      {num:'15',text:'A quantidade de amostras coletadas mensalmente na rede atende à exigida pela portaria do Ministério da Saúde?'},
+    ]},
+  ]
+},
+
+pressao:{
+  title:'Monitoramento de Pressão Manométrica',
+  tag:'📊 Monitoramento',
+  pressureTable:true,
+  extraMeta:[
+    {label:'Município',key:'municipio',type:'text',placeholder:'Nome do município'}
+  ],
+  sections:[]
+},
+
+eee:{
+  title:'Ficha de Inspeção: Estação Elevatória de Esgoto (EEE)',
+  tag:'🟣 Esgotamento Sanitário',
+  extraMeta:[{label:'Identificação da EEE',key:'id_eee',type:'text'}],
+  sections:[
+    {name:'I. Infraestrutura',questions:[
+      {num:'01',text:'Existe sinalização identificando a área da Estação Elevatória de Esgoto?'},
+      {num:'02',text:'A EE está em bom estado de conservação e bem protegida?'},
+      {num:'03',key:'motob_eee',type:'twocol',text:'Dados das Motobombas',cols:[{label:'Qtd total de conjunto motobombas',key:'eee_qtd',placeholder:'Quantidade'},{label:'Potência',key:'eee_pot',placeholder:'kW'}]},
+      {num:'04',text:'A estação elevatória é automatizada?'},
+      {num:'05',text:'Há caixas de passagem, ventosas, descargas e blocos de ancoragem?'},
+      {num:'06',key:'dest_eee',type:'text',text:'Local para onde o esgoto é recalcado:',placeholder:'Destino'},
+    ]},
+    {name:'II. Operação e manutenção',questions:[
+      {num:'07',text:'Há facilidade da realização de trabalhos de manutenção na EE?'},
+      {num:'08',text:'Existe boa iluminação, inclusive natural na EE?'},
+      {num:'10',text:'As condições de manutenção do quadro de força são boas?'},
+      {num:'11',text:'Existe ohmímetro?'},
+      {num:'12',text:'Existe bomba reserva?'},
+      {num:'13',text:'Existem extintores de incêndio (verificar a validade)?'},
+    ]}
+  ]
+},
+
+emissario:{
+  title:'Ficha de Inspeção: Emissário',
+  tag:'🟣 Esgotamento Sanitário',
+  extraMeta:[
+    {label:'Tipo de tratamento precedido',key:'trat_prec',type:'checkrow',options:['Nenhum','Preliminar','Secundário','Remoção de nutrientes']},
+    {label:'Identificação / Vazão média (m³/s)',key:'id_emis',type:'text',placeholder:'Identificação e vazão'}
+  ],
+  sections:[
+    {name:'I. Licença ambiental e outorga',questions:[
+      {num:'01',text:'O emissário possui licenciamento ambiental para funcionamento?'},
+      {num:'02',text:'O emissário possui outorga de lançamento de efluentes (Decreto Estadual 06/2001)?'},
+    ]},
+    {name:'II. Infraestrutura, operação e manutenção',questions:[
+      {num:'03',key:'tipo_tub_em',type:'text',text:'Tipo de tubulação utilizada:',placeholder:'Material e diâmetro'},
+      {num:'04',text:'É feita manutenção periódica no emissário?'},
+      {num:'05',text:'Existe facilidade de acesso para manutenção ao longo da linha do emissário?'},
+      {num:'06',text:'Existem componentes instalados no emissário (ventosas, registros de descargas etc.)?'},
+      {num:'07',text:'Há problemas de vazamentos no emissário?'},
+      {num:'08',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+    ]},
+    {name:'III. Controle de qualidade do efluente',questions:[
+      {num:'10',text:'O manancial receptor tem classificação e controle de lançamento?'},
+      {num:'11',text:'Há controle de qualidade dos efluentes com monitoramento?'},
+    ]}
+  ]
+},
+
+ete:{
+  title:'Ficha de Inspeção: ETE – Estação de Tratamento de Esgoto',
+  tag:'🟣 Esgotamento Sanitário',
+  extraMeta:[
+    {label:'Identificação da ETE',key:'id_ete',type:'text'},
+    {label:'Método de Tratamento',key:'metodo_ete',type:'checkrow',options:['Lodos Ativados','Lagoas de Estabilização','Tratamento Anaeróbio']}
+  ],
+  sections:[
+    {name:'I. Licença Ambiental',questions:[{num:'01',text:'A ETE possui licenciamento ambiental para funcionamento?'}]},
+    {name:'II. Área da ETE',questions:[
+      {num:'02',text:'Existe placa indicativa do local, identificando a área pertencente à Prestadora?'},
+      {num:'03',text:'O acesso à ETE está em boas condições?'},
+      {num:'04',text:'A ETE encontra-se protegida contra acesso de estranhos e animais?'},
+      {num:'05',text:'Existe macro medidor ou outro dispositivo de medição na entrada do sistema?'},
+    ]},
+    {name:'III. Fase Preliminar',questions:[
+      {num:'07',text:'Existe correção de pH?'},
+      {num:'08',text:'Existe odor desagradável no tratamento preliminar?'},
+      {num:'09',text:'Existe controle de odores no tratamento preliminar?'},
+      {num:'10',text:'Existe gradeamento grosseiro?'},
+      {num:'11',text:'Possui grade reserva?'},
+      {num:'12',text:'Possui grade fora de operação?'},
+      {num:'13',text:'Os equipamentos estão em bom estado de conservação?'},
+      {num:'14',text:'Possui desarenador?'},
+      {num:'15',text:'Possui desarenador reserva?'},
+      {num:'17',text:'Escadas e guardas corpos existentes estão em boas condições?'},
+      {num:'18',text:'Há vazamentos aparentes?'},
+      {num:'19',text:'As condições gerais de higiene e segurança são adequadas?'},
+    ]},
+    {name:'IV. Fase Primária – Decantação Primária',questions:[
+      {num:'20',text:'Os decantadores estão em boas condições?'},
+      {num:'21',text:'As escadas de acesso estão em boas condições de uso?'},
+      {num:'22',text:'Existem passarelas com guardas-corpos de proteção no decantador para segurança do operador?'},
+      {num:'24',text:'Onde é lançado o lodo retido pelos decantadores?'},
+      {num:'25',text:'Há vazamentos aparentes na decantação primária?'},
+      {num:'26',text:'As condições gerais de higiene e segurança são adequadas?'},
+      {num:'27',text:'É uma decantação primária com adição de sais ou polímeros?'},
+    ]},
+    {name:'IV-II. Aeração',questions:[
+      {num:'28',text:'Existe escada de acesso ao aerador?'},
+      {num:'30',text:'Há guardas-corpos de segurança para acesso ao aerador?'},
+      {num:'31',text:'O aerador está sendo eficiente?'},
+    ]},
+    {name:'V. Tratamento Secundário – Lagoas e Reatores',questions:[
+      {num:'41',key:'tipo_lagoa',type:'checkrow',text:'Tipos de lagoas de estabilização',options:['Anaeróbia','Facultativa','Aeróbia','Maturação']},
+      {num:'46',text:'Existe uma rotina de limpeza das lagoas?'},
+      {num:'47',text:'As instalações estão em boas condições de conservação?'},
+      {num:'48',text:'Escadas e guardas corpos existentes estão em boas condições?'},
+      {num:'49',text:'Há vazamentos aparentes?'},
+      {num:'50',text:'As condições gerais de higiene e segurança são adequadas?'},
+      {num:'51',text:'São monitorados os parâmetros de vazão, velocidade ascensional e o TDH?'},
+      {num:'52',text:'É realizada remoção periódica de escumas e lodo no reator UASB?'},
+    ]},
+    {name:'VII. Tratamento e Manejo do Lodo',questions:[
+      {num:'36',text:'A destinação do lodo é adequada?'},
+      {num:'37',text:'É realizado o adensamento do lodo?'},
+      {num:'38',key:'adensamento',type:'checkrow',text:'Dispositivo de adensamento',options:['Gravidade','Flotação com ar dissolvido','Mecânico']},
+      {num:'39',text:'É realizada a digestão do lodo?'},
+      {num:'40',key:'digestao',type:'checkrow',text:'Dispositivo de digestão',options:['Aeróbia','Anaeróbia','Convencional baixa taxa']},
+      {num:'41',key:'desidratacao',type:'checkrow',text:'Dispositivo de desidratação',options:['Gravidade','Flotação com ar dissolvido','Mecânico']},
+      {num:'43',text:'Escadas e guardas corpos existentes estão em boas condições?'},
+      {num:'44',text:'Há vazamentos aparentes no manejo de lodo?'},
+      {num:'45',text:'As condições gerais de higiene e segurança são adequadas?'},
+    ]},
+    {name:'VIII. Controle de qualidade de efluentes',questions:[
+      {num:'46',text:'Há dispositivos de macromedição de vazão na saída e entrada da ETE?'},
+      {num:'47',text:'É realizado o monitoramento/controle do efluente lançado?'},
+      {num:'48',text:'Há controle de qualidade dos efluentes (DBO, DQO, pH, Temperatura, Coliformes, N-Amoniacal, Nitrito, Nitrato, Fósforo, Sólidos)?'},
+      {num:'49',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
+    ]}
+  ]
+},
+
+redesesgoto:{
+  title:'Ficha de Inspeção: Redes de Esgotamento Sanitário',
+  tag:'🟣 Esgotamento Sanitário',
+  sections:[
+    {name:'I. Informações à Rede',questions:[
+      {num:'01',text:'Existem pontos críticos de rede?'},
+      {num:'02',key:'motivos',type:'checkrow',text:'Principais motivos (caso haja pontos críticos)',options:['Diâmetro insuficiente','Águas pluviais','Material','Resíduos sólidos','Outros']},
+      {num:'03',text:'Existe programa de manutenção preventiva?'},
+      {num:'04',text:'Dispõe de equipamentos de manutenção?'},
+      {num:'05',text:'Há treinamentos para as equipes de manutenção de redes?'},
+      {num:'06',key:'desobst',type:'checkrow',text:'É realizada a desobstrução periódica da rede de coletores ou ramais?',options:['Mecânica','Hidrojato','Não se aplica']},
+      {num:'08',text:'Existe ocorrência de retorno de esgoto nos imóveis?'},
+      {num:'09',text:'Existe transbordamento nos poços de visita?'},
+      {num:'10',text:'Há programa de verificação de ligações irregulares de águas pluviais nas redes coletoras?'},
+      {num:'11',text:'Há ensaio de recebimento de novas redes?'},
+    ]},
+    {name:'II. Checagem da Rede',questions:[
+      {num:'12',text:'Existe terminal de limpeza (TL) no início dos coletores?'},
+      {num:'13',text:'Em mudanças de direção, declividade e material há a presença de caixa de passagem (CP)?'},
+      {num:'14',text:'Em locais com grandes declividades e/ou com mais de 3 coletores, existe PV?'},
+      {num:'16',key:'assentamento',type:'checkrow',text:'O assentamento da rede na via pública é:',options:['Passeio','Terço da faixa carroçável','No eixo da faixa carroçável']},
+      {num:'17',text:'Existe plano de monitoramento ou rotina de operação/manutenção da rede?'},
+    ]}
+  ]
+},
+
+comercial:{
+  title:'Ficha de Inspeção Comercial/Operacional',
+  tag:'🟢 Comercial',
+  sections:[
+    {name:'I. Infraestrutura do Escritório / Loja',questions:[
+      {num:'01',text:'Existem placas indicativas de que ali funciona um escritório/loja de atendimento da Concessionária?'},
+      {num:'02',text:'O horário de atendimento está informado na placa?'},
+      {num:'03',text:'A escritório/loja está bem localizado?'},
+      {num:'04',text:'Existe facilidade de acesso ao local?'},
+      {num:'05',text:'A estrutura do prédio está conservada?'},
+      {num:'06',text:'A temperatura ambiente é confortável (Conforto Térmico)?'},
+      {num:'07',text:'Existe banheiro disponível em boas condições para uso dos funcionários?'},
+      {num:'08',text:'O posto de trabalho é adequado em relação às condições ergométricas?'},
+      {num:'09',text:'Os aspectos estéticos e funcionais estão adequados (pintura, layout, decoração etc.)?'},
+      {num:'10',text:'Existe banheiro disponível para uso de usuários, além dos funcionários?'},
+      {num:'11',text:'Existem extintores de incêndio (verificar a validade)?'},
+    ]},
+    {name:'II. Atendimento',questions:[
+      {num:'05b',text:'Existe pessoal exclusivo para atendimento ao público?'},
+      {num:'06b',text:'Existe no escritório/loja manuais de atendimento e execução dos serviços?'},
+      {num:'07b',text:'O escritório/loja acontece de ser fechado durante o horário de expediente?'},
+      {num:'08b',text:'É calculada a média de atendimento diária e mensal?'},
+      {num:'09b',text:'É feito tratamento sobre os dados de atendimento para melhoria dos serviços?'},
+      {num:'10b',text:'Existe tabela de tarifas atualizada exposta para consulta dos usuários?'},
+      {num:'11b',text:'Existe Tabela de Preços dos serviços cobráveis e prazos atualizada à disposição dos usuários?'},
+    ]},
+    {name:'III. Almoxarifado',questions:[
+      {num:'A01',text:'A estrutura local está aparentemente segura?'},
+      {num:'A02',text:'Existem extintores de incêndio no almoxarifado?'},
+      {num:'A03',text:'Os níveis de iluminação são favoráveis?'},
+      {num:'A04',text:'Há ventilação natural ou artificial suficientes?'},
+      {num:'A05',text:'O piso encontra-se em bom estado?'},
+      {num:'A06',text:'Os equipamentos e instalações elétricas estão em bom estado?'},
+      {num:'A07',text:'O armazenamento de materiais é feito de forma adequada e segura?'},
+      {num:'A08',text:'Todos os recipientes com substâncias químicas perigosas possuem rótulos visíveis?'},
+    ]},
+    {name:'IV. Serviço de Campo',questions:[
+      {num:'C01',text:'O número de funcionários está atendendo à demanda de serviço existente?'},
+      {num:'C02',text:'Existem fardamentos e EPIs adequados para uso dos funcionários em campo?'},
+      {num:'C03',text:'Existem cavaletes, cones e placas de aviso suficientes para a sinalização de rua?'},
+      {num:'C04',text:'Existem veículos para uso dos funcionários (carros, motos, bicicletas)?'},
+    ]}
+  ]
+},
+
+acomp:{
+  title:'Acompanhamento Comercial/Operacional',
+  tag:'🟢 Comercial',
+  sections:[
+    {name:'I. Infraestrutura do Escritório / Loja',questions:[
+      {num:'01',text:'Existem placas indicativas de que ali funciona um escritório/loja de atendimento da Concessionária?'},
+      {num:'02',text:'O horário de atendimento está informado na placa?'},
+      {num:'03',text:'A escritório/loja está bem localizado?'},
+      {num:'04',text:'Existe facilidade de acesso ao local?'},
+      {num:'05',text:'A estrutura do prédio está conservada?'},
+      {num:'06',text:'A temperatura ambiente é confortável?'},
+      {num:'07',text:'Existe banheiro disponível para uso dos funcionários?'},
+      {num:'08',text:'O posto de trabalho é adequado ergometricamente?'},
+      {num:'09',text:'Os aspectos estéticos e funcionais estão adequados?'},
+      {num:'10',text:'Existe banheiro disponível para uso de usuários?'},
+      {num:'11',text:'Existem extintores de incêndio?'},
+    ]},
+    {name:'II. Atendimento',questions:[
+      {num:'05b',text:'Existe pessoal exclusivo para atendimento ao público?'},
+      {num:'06b',text:'Existem manuais de atendimento e execução dos serviços?'},
+      {num:'07b',text:'O escritório/loja acontece de ser fechado durante o horário de expediente?'},
+      {num:'08b',text:'É calculada a média de atendimento diária e mensal?'},
+      {num:'09b',text:'É feito tratamento sobre os dados de atendimento para melhoria dos serviços?'},
+      {num:'10b',text:'Existe tabela de tarifas atualizada exposta?'},
+      {num:'11b',text:'Existe Tabela de Preços dos serviços cobráveis à disposição dos usuários?'},
+    ]},
+    {name:'III. Almoxarifado',questions:[
+      {num:'A01',text:'A estrutura local está aparentemente segura?'},
+      {num:'A02',text:'Existem extintores de incêndio?'},
+      {num:'A03',text:'Os níveis de iluminação são favoráveis?'},
+      {num:'A04',text:'Há ventilação suficiente?'},
+      {num:'A05',text:'O piso encontra-se em bom estado?'},
+      {num:'A06',text:'Os equipamentos e instalações elétricas estão em bom estado?'},
+      {num:'A07',text:'O armazenamento de materiais é feito de forma adequada e segura?'},
+      {num:'A08',text:'Todos os recipientes com substâncias químicas perigosas possuem rótulos visíveis?'},
+    ]},
+    {name:'IV. Serviço de Campo',questions:[
+      {num:'C01',text:'O número de funcionários está atendendo à demanda de serviço?'},
+      {num:'C02',text:'Existem fardamentos e EPIs adequados para uso dos funcionários?'},
+      {num:'C03',text:'Existem cavaletes, cones e placas de aviso para sinalização de rua?'},
+      {num:'C04',text:'Existem veículos para uso dos funcionários?'},
+    ]}
+  ]
+}
+
+}; // end FORMS
+</script>
+</body>
+</html>
