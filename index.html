@@ -243,6 +243,9 @@ body{
 .radio-chip.sel-sim{background:#DBEAFE;border-color:#60A5FA;color:#1D4ED8;font-weight:600;}
 .radio-chip.sel-nao{background:#FEE2E2;border-color:#FCA5A5;color:#B91C1C;font-weight:600;}
 .radio-chip.sel-na{background:#9CA3AF;border-color:#6B7280;color:#fff;font-weight:600;}
+/* Invertido: NÃO=verde, SIM=vermelho */
+.radio-chip.sel-sim-inv{background:#FEE2E2;border-color:#FCA5A5;color:#B91C1C;font-weight:600;}
+.radio-chip.sel-nao-inv{background:#DCFCE7;border-color:#86EFAC;color:#166534;font-weight:600;}
 
 .obs-input{
   margin-top:8px;width:100%;
@@ -380,6 +383,9 @@ body{
 .rv .badge-sim{background:#DCFCE7;color:#166534;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
 .rv .badge-nao{background:#FEE2E2;color:#991B1B;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
 .rv .badge-na{background:#F3F4F6;color:#6B7280;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
+/* Invertido */
+.rv .badge-sim-inv{background:#FEE2E2;color:#991B1B;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
+.rv .badge-nao-inv{background:#DCFCE7;color:#166534;padding:1px 8px;border-radius:10px;font-size:.75rem;font-weight:600;}
 .modal-foot{
   padding:16px 32px 28px;display:flex;gap:10px;flex-wrap:wrap;
 }
@@ -876,10 +882,11 @@ function renderForm(def){
       html+=`<div class="question-text"><span class="q-num">${q.num||''}.</span>${q.text}</div>`;
       if(q.type==='radio'||!q.type){
         const k=`q_${sPrefix}${q.num||q.key}`;
+        const inv=q.invertido?'true':'false';
         html+=`<div class="radio-row">
-          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" value="SIM"> ✓ SIM</label>
-          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" value="NÃO"> ✗ NÃO</label>
-          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" value="NÃO SE APLICA"> — N/A</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" data-inverted="${inv}" value="SIM"> ✓ SIM</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" data-inverted="${inv}" value="NÃO"> ✗ NÃO</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" data-inverted="${inv}" value="NÃO SE APLICA"> — N/A</label>
         </div>
         <textarea class="obs-input" data-field="${k}_obs" placeholder="Observação..." rows="1"></textarea>`;
       } else if(q.type==='text'){
@@ -939,18 +946,19 @@ function applyChipStyle(radio){
   const chip=radio.closest('.radio-chip');
   if(!chip)return;
   const k=radio.dataset.field;
+  const inv=radio.dataset.inverted==='true';
   // Limpa todos os estilos de seleção dos irmãos
   clearChipStyles(k);
   // Aplica o estilo correto ao chip selecionado
-  if(radio.value==='SIM')chip.classList.add('sel-sim');
-  else if(radio.value==='NÃO')chip.classList.add('sel-nao');
+  if(radio.value==='SIM')chip.classList.add(inv?'sel-sim-inv':'sel-sim');
+  else if(radio.value==='NÃO')chip.classList.add(inv?'sel-nao-inv':'sel-nao');
   else chip.classList.add('sel-na');
 }
 
 function clearChipStyles(k){
   // Fix Bug 12: lista sem duplicatas
   document.querySelectorAll(`[data-field="${k}"]`).forEach(r=>{
-    r.closest('.radio-chip')?.classList.remove('sel-sim','sel-nao','sel-na');
+    r.closest('.radio-chip')?.classList.remove('sel-sim','sel-nao','sel-na','sel-sim-inv','sel-nao-inv');
   });
 }
 
@@ -1012,7 +1020,13 @@ function showReport(){
   def.sections.forEach((sec,si)=>sec.questions.forEach(q=>{
     if(q.type&&q.type!=='radio')return;
     const v=data[`q_s${si}_${q.num||q.key}`];
-    if(v==='SIM')cSim++;else if(v==='NÃO')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+    const inv=q.invertido||false;
+    if(!inv){
+      if(v==='SIM')cSim++;else if(v==='NÃO')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+    } else {
+      // Para invertidas: NÃO=conforme, SIM=não conforme
+      if(v==='NÃO')cSim++;else if(v==='SIM')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+    }
   }));
   const cTotal=cSim+cNao+cNa;
   const pctSim=cTotal?Math.round(cSim/cTotal*100):0;
@@ -1045,9 +1059,10 @@ function showReport(){
         const k=`q_${sPrefix}${q.num||q.key}`;
         const v=data[k];
         const obs=data[k+'_obs'];
+        const inv=q.invertido||false;
         let badge='';
-        if(v==='SIM')badge=`<span class="badge-sim">SIM</span>`;
-        else if(v==='NÃO')badge=`<span class="badge-nao">NÃO</span>`;
+        if(v==='SIM')badge=`<span class="${inv?'badge-sim-inv':'badge-sim'}">SIM</span>`;
+        else if(v==='NÃO')badge=`<span class="${inv?'badge-nao-inv':'badge-nao'}">NÃO</span>`;
         else if(v==='NÃO SE APLICA')badge=`<span class="badge-na">N/A</span>`;
         html+=`<div class="report-row"><span class="rk">${q.num||''}. ${q.text}</span><span class="rv">${badge}${obs?` <em style="color:var(--muted);font-size:.8rem"> — ${obs}</em>`:''}</span></div>`;
       }
@@ -1307,7 +1322,7 @@ async function exportPDF(){
   // FUNÇÃO: Bloco de questão (radio)
   // ══════════════════════════════════════════════════════════════
   let qRowIndex=0;
-  function drawQuestion(num,texto,resposta,obs){
+  function drawQuestion(num,texto,resposta,obs,invertido){
     const qLines=doc.splitTextToSize(`${num?num+'. ':''}${texto}`,contentW-32);
     const obsLines=obs?doc.splitTextToSize('Obs.: '+obs,contentW-10):[];
     const rowH=Math.max(8,qLines.length*lineH+2+(obsLines.length?(obsLines.length*5.5+3):0));
@@ -1334,9 +1349,15 @@ async function exportPDF(){
     if(resposta){
       const badgeW=20, badgeH=5.5, badgeX=mL+contentW-badgeW-1, badgeY=y+1.5;
       let bgC,txC,txt;
-      if(resposta==='SIM'){bgC=C.verdeB;txC=C.verdeT;txt='SIM';}
-      else if(resposta==='NÃO'){bgC=C.vermelhoB;txC=C.vermelhoT;txt='NÃO';}
-      else{bgC=C.naB;txC=C.naT;txt='N/A';}
+      if(resposta==='SIM'){
+        bgC=invertido?C.vermelhoB:C.verdeB;
+        txC=invertido?C.vermelhoT:C.verdeT;
+        txt='SIM';
+      } else if(resposta==='NÃO'){
+        bgC=invertido?C.verdeB:C.vermelhoB;
+        txC=invertido?C.verdeT:C.vermelhoT;
+        txt='NÃO';
+      } else {bgC=C.naB;txC=C.naT;txt='N/A';}
       fill(...bgC); doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'F');
       // Borda do badge
       stroke(...txC); doc.setLineWidth(0.3);
@@ -1474,7 +1495,7 @@ async function exportPDF(){
       } else {
         // radio
         const k=`q_${sPrefix}${q.num||q.key}`;
-        drawQuestion(q.num,q.text,data[k]||'',data[k+'_obs']||'');
+        drawQuestion(q.num,q.text,data[k]||'',data[k+'_obs']||'',q.invertido||false);
       }
     });
     y+=3;
@@ -1548,7 +1569,12 @@ async function exportPDF(){
   def.sections.forEach((sec,si)=>sec.questions.forEach(q=>{
     if(q.type&&q.type!=='radio')return;
     const v=data[`q_s${si}_${q.num||q.key}`];
-    if(v==='SIM')cSim++;else if(v==='NÃO')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+    const inv=q.invertido||false;
+    if(!inv){
+      if(v==='SIM')cSim++;else if(v==='NÃO')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+    } else {
+      if(v==='NÃO')cSim++;else if(v==='SIM')cNao++;else if(v==='NÃO SE APLICA')cNa++;
+    }
   }));
   const cTotal=cSim+cNao+cNa;
   const pctSim=cTotal?Math.round(cSim/cTotal*100):0;
@@ -1685,9 +1711,9 @@ captacao:{
       {num:'01',text:'Existe sinalização identificando o manancial e que aquela é uma área destinada ao abastecimento público?'},
       {num:'02',text:'Há outorga de captação e obra hídrica?'},
       {num:'03',text:'Existe um perímetro de proteção sanitária da área do manancial, principalmente próximo à captação?'},
-      {num:'04',text:'Há eutrofização do manancial?'},
+      {num:'04',text:'Há eutrofização do manancial?',invertido:true},
       {num:'05',text:'É feito monitoramento de cianobactérias e clorofila A?'},
-      {num:'07',text:'Observar potenciais fontes poluidoras, avaliar uso e ocupação da bacia do manancial?'},
+      {num:'07',text:'Observa potenciais fontes poluidoras, avalia uso e ocupação da bacia do manancial?'},
       {num:'08',text:'O volume captado atualmente garante o abastecimento de água sem haver colapso no abastecimento?'},
       {num:'09',text:'Há controle de nível e de vazões na barragem?'},
       {num:'10',text:'A acessibilidade do local está em boas condições?'},
@@ -1738,7 +1764,7 @@ adutoras:{
       {num:'04',text:'As caixas de proteção dos componentes estão em boas condições?'},
       {num:'05',text:'Existe macromedição?'},
       {num:'06',text:'Existem estações pitométricas?'},
-      {num:'07',text:'Há problemas de vazamentos na adutora?'},
+      {num:'07',text:'Há problemas de vazamentos na adutora?',invertido:true},
       {num:'08',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
       {num:'09',text:'Há plano de combate às perdas físicas?'},
     ]}
@@ -1772,14 +1798,13 @@ ee:{
       {num:'15',text:'Há manômetros, pitometria ou macromedidores na saída das adutoras?'},
       {num:'16',text:'Há registros e controle de transitórios hidráulicos?'},
       {num:'17',text:'Qual a real condição de impermeabilização?'},
-      {num:'18',text:'Há vazamentos aparentes?'},
-      {num:'19',text:'Há regularidade das pressões?'},
+      {num:'18',text:'Há vazamentos aparentes?',invertido:true},
       {num:'20',text:'É realizada a limpeza das adutoras quanto à presença de incrustações?'},
       {num:'21',text:'Há estações do tipo booster para recalque entre dois reservatórios ou reforço na rede?'},
       {num:'22',text:'A elevatória tem eficiência energética certificada?'},
-      {num:'23',text:'Apresenta tensões oscilantes e sobreaquecimento dos motores?'},
-      {num:'24',text:'Os motores entram em curto constantemente?'},
-      {num:'25',text:'A conta de energia é muito elevada?'},
+      {num:'23',text:'Apresenta tensões oscilantes e sobreaquecimento dos motores?',invertido:true},
+      {num:'24',text:'Os motores entram em curto constantemente?',invertido:true},
+      {num:'25',text:'A conta de energia é muito elevada?',invertido:true},
       {num:'26',text:'Há mecanismos para redução da altura manométrica, redução do volume de água e aumento do desempenho dos motores?'},
       {num:'27',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
       {num:'28',text:'Existem extintores de incêndio (verificar a validade)?'},
@@ -1823,9 +1848,9 @@ eta:{
     ]},
     {name:'V. Decantação',questions:[
       {num:'23',key:'tipo_dec',type:'checkrow',text:'Tipo de Decantador',options:['Fluxo Horizontal','Alta Taxa','Manta de Lodo']},
-      {num:'24',text:'É observada a ressuspensão de flocos nas proximidades da calha de água decantada?'},
+      {num:'24',text:'É observada a ressuspensão de flocos nas proximidades da calha de água decantada?',invertido:true},
       {num:'25',text:'É realizada a limpeza das calhas de água decantada?'},
-      {num:'26',text:'Foram observados sinais de fotossíntese ou digestão anaeróbia das lamas capaz de comprometer a qualidade da água?'},
+      {num:'26',text:'Foram observados sinais de fotossíntese ou digestão anaeróbia das lamas capaz de comprometer a qualidade da água?',invertido:true},
       {num:'27',text:'É realizada a limpeza dos decantadores?'},
       {num:'29',text:'Os decantadores estão em boas condições?'},
       {num:'30',text:'As escadas de acesso estão em boas condições de uso?'},
@@ -1836,15 +1861,15 @@ eta:{
       {num:'33',text:'Há controle de nível para lavagem dos filtros?'},
       {num:'34',text:'Há um plano de escalonamento da lavagem dos filtros?'},
       {num:'35',text:'São realizadas análises periódicas de água filtrada conforme plano de monitoramento?'},
-      {num:'36',text:'Há sinais de curtos-circuitos e caminhos preferenciais?'},
+      {num:'36',text:'Há sinais de curtos-circuitos e caminhos preferenciais?',invertido:true},
       {num:'37',text:'Os filtros estão em boas condições?'},
       {num:'38',text:'As escadas de acesso estão em boas condições de uso?'},
       {num:'39',text:'Há guardas-corpos de segurança nas instalações de filtração?'},
-      {num:'41',text:'Há vazamentos nas tubulações dos filtros?'},
+      {num:'41',text:'Há vazamentos nas tubulações dos filtros?',invertido:true},
       {num:'43',text:'O volume de água de lavagem é menor que 5% do total produzido?'},
       {num:'44',text:'As águas de lavagem dos filtros e descarga de fundo estão sendo dispostas em local adequado?'},
-      {num:'46',text:'Há presença de bolhas na filtração?'},
-      {num:'47',text:'Há carreamento do leito filtrante?'},
+      {num:'46',text:'Há presença de bolhas na filtração?',invertido:true},
+      {num:'47',text:'Há carreamento do leito filtrante?',invertido:true},
     ]},
     {name:'VII. Casa de Química (NBR13295)',questions:[
       {num:'48',text:'As condições de higiene e limpeza são boas?'},
@@ -1882,7 +1907,7 @@ eta:{
     ]},
     {name:'IX. Outros',questions:[
       {num:'59b',text:'As caixas de proteção, inspeção ou passagem existentes possuem tampas adequadas?'},
-      {num:'60b',text:'Existem vazamentos nas instalações (tubos, registros etc.)?'},
+      {num:'60b',text:'Existem vazamentos nas instalações (tubos, registros etc.)?',invertido:true},
       {num:'61',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
       {num:'62',text:'Existem extintores de incêndio (verificar a validade)?'},
     ]},
@@ -1906,7 +1931,7 @@ reservatorio:{
     ]},
     {name:'II. Infraestrutura, instalações e funcionamento',questions:[
       {num:'04',text:'As condições de conservação do reservatório são boas (sem rachaduras, corrosão, infiltrações e vazamentos aparentes)?'},
-      {num:'05',text:'Em caso negativo, existem rachaduras que possam comprometer a estrutura?'},
+      {num:'05',text:'Em caso negativo, existem rachaduras que possam comprometer a estrutura?',invertido:true},
       {num:'06',text:'Há pára-raios e sinalização noturna?'},
       {num:'07',text:'As caixas de proteção, de inspeção ou de passagem existentes possuem tampas adequadas?'},
       {num:'08',text:'Existe escada de acesso ao reservatório em boas condições de uso?'},
@@ -1917,11 +1942,11 @@ reservatorio:{
       {num:'13',text:'Existe tubo extravasor?'},
       {num:'14',text:'Existe tubo de descarga de fundo?'},
       {num:'15',key:'tipo_tub',type:'checkrow',text:'Tipo de tubulação de entrada',options:['Livre','Afogada']},
-      {num:'16',text:'Existem vazamentos nas instalações (tubos, registros etc.)?'},
+      {num:'16',text:'Existem vazamentos nas instalações (tubos, registros etc.)?',invertido:true},
       {num:'17',text:'Existe controle de nível?'},
       {num:'18',text:'Há macro medidor na saída do reservatório?'},
       {num:'19',text:'Há controle de nível para assegurar volume mínimo e evitar vórtices?'},
-      {num:'20',text:'Ocorre extravasamento do reservatório?'},
+      {num:'20',text:'Ocorre extravasamento do reservatório?',invertido:true},
       {num:'21',text:'É realizada a limpeza e desinfecção periódica?'},
       {num:'22',text:'A água de lavagem é medida ou estimada?'},
       {num:'23',text:'A água de lavagem é lançada em local adequado?'},
@@ -2020,7 +2045,7 @@ emissario:{
       {num:'04',text:'É feita manutenção periódica no emissário?'},
       {num:'05',text:'Existe facilidade de acesso para manutenção ao longo da linha do emissário?'},
       {num:'06',text:'Existem componentes instalados no emissário (ventosas, registros de descargas etc.)?'},
-      {num:'07',text:'Há problemas de vazamentos no emissário?'},
+      {num:'07',text:'Há problemas de vazamentos no emissário?',invertido:true},
       {num:'08',text:'Existe plano de monitoramento ou rotina de operação/manutenção do local?'},
     ]},
     {name:'III. Controle de qualidade do efluente',questions:[
@@ -2047,16 +2072,16 @@ ete:{
     ]},
     {name:'III. Fase Preliminar',questions:[
       {num:'07',text:'Existe correção de pH?'},
-      {num:'08',text:'Existe odor desagradável no tratamento preliminar?'},
+      {num:'08',text:'Existe odor desagradável no tratamento preliminar?',invertido:true},
       {num:'09',text:'Existe controle de odores no tratamento preliminar?'},
       {num:'10',text:'Existe gradeamento grosseiro?'},
       {num:'11',text:'Possui grade reserva?'},
-      {num:'12',text:'Possui grade fora de operação?'},
+      {num:'12',text:'Possui grade fora de operação?',invertido:true},
       {num:'13',text:'Os equipamentos estão em bom estado de conservação?'},
       {num:'14',text:'Possui desarenador?'},
       {num:'15',text:'Possui desarenador reserva?'},
       {num:'17',text:'Escadas e guardas corpos existentes estão em boas condições?'},
-      {num:'18',text:'Há vazamentos aparentes?'},
+      {num:'18',text:'Há vazamentos aparentes?',invertido:true},
       {num:'19',text:'As condições gerais de higiene e segurança são adequadas?'},
     ]},
     {name:'IV. Fase Primária – Decantação Primária',questions:[
@@ -2064,7 +2089,7 @@ ete:{
       {num:'21',text:'As escadas de acesso estão em boas condições de uso?'},
       {num:'22',text:'Existem passarelas com guardas-corpos de proteção no decantador para segurança do operador?'},
       {num:'24',text:'Onde é lançado o lodo retido pelos decantadores?'},
-      {num:'25',text:'Há vazamentos aparentes na decantação primária?'},
+      {num:'25',text:'Há vazamentos aparentes na decantação primária?',invertido:true},
       {num:'26',text:'As condições gerais de higiene e segurança são adequadas?'},
       {num:'27',text:'É uma decantação primária com adição de sais ou polímeros?'},
     ]},
@@ -2078,7 +2103,7 @@ ete:{
       {num:'46',text:'Existe uma rotina de limpeza das lagoas?'},
       {num:'47',text:'As instalações estão em boas condições de conservação?'},
       {num:'48',text:'Escadas e guardas corpos existentes estão em boas condições?'},
-      {num:'49',text:'Há vazamentos aparentes?'},
+      {num:'49',text:'Há vazamentos aparentes?',invertido:true},
       {num:'50',text:'As condições gerais de higiene e segurança são adequadas?'},
       {num:'51',text:'São monitorados os parâmetros de vazão, velocidade ascensional e o TDH?'},
       {num:'52',text:'É realizada remoção periódica de escumas e lodo no reator UASB?'},
@@ -2091,7 +2116,7 @@ ete:{
       {num:'40',key:'digestao',type:'checkrow',text:'Dispositivo de digestão',options:['Aeróbia','Anaeróbia','Convencional baixa taxa']},
       {num:'41',key:'desidratacao',type:'checkrow',text:'Dispositivo de desidratação',options:['Gravidade','Flotação com ar dissolvido','Mecânico']},
       {num:'43',text:'Escadas e guardas corpos existentes estão em boas condições?'},
-      {num:'44',text:'Há vazamentos aparentes no manejo de lodo?'},
+      {num:'44',text:'Há vazamentos aparentes no manejo de lodo?',invertido:true},
       {num:'45',text:'As condições gerais de higiene e segurança são adequadas?'},
     ]},
     {name:'VIII. Controle de qualidade de efluentes',questions:[
@@ -2108,14 +2133,14 @@ redesesgoto:{
   tag:'🟣 Esgotamento Sanitário',
   sections:[
     {name:'I. Informações à Rede',questions:[
-      {num:'01',text:'Existem pontos críticos de rede?'},
+      {num:'01',text:'Existem pontos críticos de rede?',invertido:true},
       {num:'02',key:'motivos',type:'checkrow',text:'Principais motivos (caso haja pontos críticos)',options:['Diâmetro insuficiente','Águas pluviais','Material','Resíduos sólidos','Outros']},
       {num:'03',text:'Existe programa de manutenção preventiva?'},
       {num:'04',text:'Dispõe de equipamentos de manutenção?'},
       {num:'05',text:'Há treinamentos para as equipes de manutenção de redes?'},
       {num:'06',key:'desobst',type:'checkrow',text:'É realizada a desobstrução periódica da rede de coletores ou ramais?',options:['Mecânica','Hidrojato','Não se aplica']},
-      {num:'08',text:'Existe ocorrência de retorno de esgoto nos imóveis?'},
-      {num:'09',text:'Existe transbordamento nos poços de visita?'},
+      {num:'08',text:'Existe ocorrência de retorno de esgoto nos imóveis?',invertido:true},
+      {num:'09',text:'Existe transbordamento nos poços de visita?',invertido:true},
       {num:'10',text:'Há programa de verificação de ligações irregulares de águas pluviais nas redes coletoras?'},
       {num:'11',text:'Há ensaio de recebimento de novas redes?'},
     ]},
@@ -2149,7 +2174,7 @@ comercial:{
     {name:'II. Atendimento',questions:[
       {num:'05b',text:'Existe pessoal exclusivo para atendimento ao público?'},
       {num:'06b',text:'Existe no escritório/loja manuais de atendimento e execução dos serviços?'},
-      {num:'07b',text:'O escritório/loja acontece de ser fechado durante o horário de expediente?'},
+      {num:'07b',text:'O escritório/loja acontece de ser fechado durante o horário de expediente?',invertido:true},
       {num:'08b',text:'É calculada a média de atendimento diária e mensal?'},
       {num:'09b',text:'É feito tratamento sobre os dados de atendimento para melhoria dos serviços?'},
       {num:'10b',text:'Existe tabela de tarifas atualizada exposta para consulta dos usuários?'},
@@ -2194,7 +2219,7 @@ acomp:{
     {name:'II. Atendimento',questions:[
       {num:'05b',text:'Existe pessoal exclusivo para atendimento ao público?'},
       {num:'06b',text:'Existem manuais de atendimento e execução dos serviços?'},
-      {num:'07b',text:'O escritório/loja acontece de ser fechado durante o horário de expediente?'},
+      {num:'07b',text:'O escritório/loja acontece de ser fechado durante o horário de expediente?',invertido:true},
       {num:'08b',text:'É calculada a média de atendimento diária e mensal?'},
       {num:'09b',text:'É feito tratamento sobre os dados de atendimento para melhoria dos serviços?'},
       {num:'10b',text:'Existe tabela de tarifas atualizada exposta?'},
