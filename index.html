@@ -1099,8 +1099,8 @@ function showReport(){
     const kt=data.meta_conhecimento_tecnico;
     if(kt){
       const badge=kt==='SIM'
-        ?'<span class="badge-sim">SIM – Possui conhecimento técnico</span>'
-        :'<span class="badge-nao">NÃO – Não possui conhecimento técnico</span>';
+        ?'<span class="badge-sim">SIM</span>'
+        :'<span class="badge-nao">NÃO</span>';
       html+=`<div class="report-row"><span class="rk">Conhecimento técnico para fiscalização</span><span class="rv">${badge}</span></div>`;
     } else {
       html+=row('Conhecimento técnico para fiscalização','Não informado');
@@ -1569,7 +1569,7 @@ async function exportPDF(){
       stroke(...(isSim?[34,197,94]:[239,68,68])); doc.setLineWidth(0.3);
       doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'S');
       font('helvetica','bold',7.5); color(...(isSim?C.verdeT:C.vermelhoT));
-      doc.text(isSim?'SIM – Possui conhecimento técnico':'NÃO – Não possui conhecimento técnico',badgeX+badgeW/2,badgeY+3.8,{align:'center'});
+      doc.text(isSim?'SIM':'NÃO',badgeX+badgeW/2,badgeY+3.8,{align:'center'});
     } else {
       font('helvetica','normal',8.5); color(...C.cinzaEsc);
       doc.text('Não informado',mL+contentW-1,y+5,{align:'right'});
