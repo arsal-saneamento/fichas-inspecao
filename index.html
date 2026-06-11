@@ -888,6 +888,7 @@ function renderForm(def){
           <label class="radio-chip" data-for="meta_conhecimento_tecnico"><input type="radio" data-field="meta_conhecimento_tecnico" value="SIM"> ✓ SIM</label>
           <label class="radio-chip" data-for="meta_conhecimento_tecnico"><input type="radio" data-field="meta_conhecimento_tecnico" value="NÃO"> ✗ NÃO</label>
         </div>
+        <textarea class="obs-input" data-field="meta_conhecimento_tecnico_obs" placeholder="Observações: justifique por que possui (ou não) conhecimento técnico..." rows="1"></textarea>
       </div>
     </div>
   </div>`;
@@ -1106,6 +1107,7 @@ function showReport(){
       html+=row('Conhecimento técnico para fiscalização','Não informado');
     }
   })();
+  if(data.meta_conhecimento_tecnico_obs){html+=row('Observações',data.meta_conhecimento_tecnico_obs);}
   html+=`</div>`;
 
   def.sections.forEach((sec,si)=>{
@@ -1563,7 +1565,7 @@ async function exportPDF(){
     doc.text('Conhecimento técnico para fiscalização',mL+3,y+5);
     if(kt){
       const isSim=kt==='SIM';
-      const badgeW=36, badgeH=5.5, badgeX=mL+contentW-badgeW-1, badgeY=y+1.3;
+      const badgeW=20, badgeH=5.5, badgeX=mL+contentW-badgeW-1, badgeY=y+1.3;
       fill(...(isSim?C.verdeB:C.vermelhoB));
       doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'F');
       stroke(...(isSim?[34,197,94]:[239,68,68])); doc.setLineWidth(0.3);
@@ -1576,7 +1578,13 @@ async function exportPDF(){
     }
     stroke(...C.cinzaLt); doc.setLineWidth(0.2);
     doc.line(mL,y+rowH,mL+contentW,y+rowH);
-    y+=rowH+4;
+    y+=rowH;
+
+    // Observações sobre o conhecimento técnico
+    if(data.meta_conhecimento_tecnico_obs){
+      drawDataRow('Observações',data.meta_conhecimento_tecnico_obs,false);
+    }
+    y+=4;
   }
 
   // ── SEÇÕES DE INSPEÇÃO
