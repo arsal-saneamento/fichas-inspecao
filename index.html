@@ -872,6 +872,26 @@ function renderForm(def){
     html+=`</div></div>`;
   }
 
+  // ── Identificação do Responsável pelo Acompanhamento (após a identificação do ativo)
+  html+=`<div class="form-section">
+    <div class="section-head"><div class="section-num" style="background:var(--arsal-gold);font-size:.95rem">👤</div><div class="section-name">Identificação do Responsável pelo Acompanhamento</div></div>
+    <div class="section-body">
+      <div class="question-block">
+        <div class="two-col-inputs" style="margin-top:0">
+          <div><div class="field-label">Nome do Responsável</div><input type="text" data-field="meta_resp_nome" class="text-input" placeholder="Nome completo do acompanhante"></div>
+          <div><div class="field-label">Cargo / Função</div><input type="text" data-field="meta_resp_cargo" class="text-input" placeholder="Cargo ou função"></div>
+        </div>
+      </div>
+      <div class="question-block">
+        <div class="question-text">O responsável da prestadora possui conhecimento técnico para acompanhar a fiscalização?</div>
+        <div class="radio-row">
+          <label class="radio-chip" data-for="meta_conhecimento_tecnico"><input type="radio" data-field="meta_conhecimento_tecnico" value="SIM"> ✓ SIM</label>
+          <label class="radio-chip" data-for="meta_conhecimento_tecnico"><input type="radio" data-field="meta_conhecimento_tecnico" value="NÃO"> ✗ NÃO</label>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
   def.sections.forEach((sec,si)=>{
     html+=`<div class="form-section" style="animation-delay:${si*.05}s">`;
     html+=`<div class="section-head"><div class="section-num">${si+1}</div><div class="section-name">${sec.name}</div></div>`;
@@ -1002,14 +1022,39 @@ function clearCurrentForm(){
 }
 
 // ============================================================
+// CAPTURA DADOS DO DOM (sempre atualizado)
+// ============================================================
+function getFormData(){
+  const data={};
+  document.querySelectorAll('[data-field]').forEach(el=>{
+    const k=el.dataset.field;
+    if(el.type==='radio'){if(el.checked)data[k]=el.value;}
+    else if(el.type==='checkbox'){
+      if(!data[k])data[k]=[];
+      if(el.checked)data[k].push(el.value);
+    }
+    else data[k]=el.value;
+  });
+  // pressure table rows
+  const rows=document.querySelectorAll('.pt-row');
+  if(rows.length){
+    data['_pressure_rows']=Array.from(rows).map(r=>({
+      logradouro:r.querySelector('.pt-log')?.value||'',
+      hora:r.querySelector('.pt-hora')?.value||'',
+      coords:r.querySelector('.pt-coord')?.value||'',
+      pressao:r.querySelector('.pt-press')?.value||''
+    }));
+  }
+  return data;
+}
+
+// ============================================================
 // REPORT
 // ============================================================
 function showReport(){
-  saveFormData();
+  saveFormData(); // persiste no storage também
   const def=FORMS[currentFormId];
-  let raw=null;
-  try{ raw=localStorage.getItem(storageKey(currentFormId)); }catch(e){}
-  const data=raw?JSON.parse(raw):{};
+  const data=getFormData(); // lê direto do DOM — sempre atual
   const now=new Date();
   const dataExtenso=now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const hora=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
@@ -1043,6 +1088,24 @@ function showReport(){
   html+=row('Data da Inspeção',data.meta_data);
   html+=row('Servidor 1',data.meta_serv1);
   html+=row('Servidor 2',data.meta_serv2);
+  html+=`</div>`;
+
+  // Identificação do responsável (após identificação do ativo)
+  html+=`<div class="report-sec"><div class="report-sec-title">Responsável pelo Acompanhamento</div>`;
+  html+=row('Nome do Responsável',data.meta_resp_nome);
+  html+=row('Cargo / Função',data.meta_resp_cargo);
+  // Badge de conhecimento técnico
+  (function(){
+    const kt=data.meta_conhecimento_tecnico;
+    if(kt){
+      const badge=kt==='SIM'
+        ?'<span class="badge-sim">SIM – Possui conhecimento técnico</span>'
+        :'<span class="badge-nao">NÃO – Não possui conhecimento técnico</span>';
+      html+=`<div class="report-row"><span class="rk">Conhecimento técnico para fiscalização</span><span class="rv">${badge}</span></div>`;
+    } else {
+      html+=row('Conhecimento técnico para fiscalização','Não informado');
+    }
+  })();
   html+=`</div>`;
 
   def.sections.forEach((sec,si)=>{
@@ -1184,9 +1247,8 @@ async function exportPDF(){
   // ── Carrega logos e dados em paralelo
   const [imgArsal,imgGov]=await Promise.all([urlToBase64(IMG_ARSAL_PDF),urlToBase64(IMG_GOV)]);
   const def=FORMS[currentFormId];
-  let rawPdf=null;
-  try{rawPdf=localStorage.getItem(storageKey(currentFormId));}catch(e){}
-  const data=rawPdf?JSON.parse(rawPdf):{};
+  saveFormData(); // garante persistência antes do PDF
+  const data=getFormData(); // lê direto do DOM — sempre atual
   const now=new Date();
   const dataGerado=now.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
   const horaGerado=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
@@ -1475,6 +1537,46 @@ async function exportPDF(){
       }
     });
     y+=4;
+  }
+
+  // ── IDENTIFICAÇÃO DO RESPONSÁVEL PELO ACOMPANHAMENTO (após identificação do ativo)
+  {
+    checkY(28);
+    fill(...C.cinzaPale); doc.roundedRect(mL,y,contentW,7,1,1,'F');
+    stroke(...C.cinzaLt); doc.setLineWidth(0.4);
+    doc.roundedRect(mL,y,contentW,7,1,1,'S');
+    fill(...C.azulMid); doc.roundedRect(mL,y,3,7,0.5,0.5,'F');
+    font('helvetica','bold',9); color(...C.azul);
+    doc.text('IDENTIFICAÇÃO DO RESPONSÁVEL PELO ACOMPANHAMENTO',mL+6,y+4.8);
+    y+=9;
+
+    drawDataRow('Nome do Responsável',data.meta_resp_nome,true);
+    drawDataRow('Cargo / Função',data.meta_resp_cargo,false);
+
+    // Conhecimento técnico com badge visual
+    const kt=data.meta_conhecimento_tecnico;
+    const rowH=8;
+    checkY(rowH);
+    fill(...C.cinzaPale); doc.rect(mL,y,contentW,rowH,'F');
+    fill(...C.azulLight); doc.rect(mL,y,0.8,rowH,'F');
+    font('helvetica','bold',8); color(...C.cinzaMed);
+    doc.text('Conhecimento técnico para fiscalização',mL+3,y+5);
+    if(kt){
+      const isSim=kt==='SIM';
+      const badgeW=36, badgeH=5.5, badgeX=mL+contentW-badgeW-1, badgeY=y+1.3;
+      fill(...(isSim?C.verdeB:C.vermelhoB));
+      doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'F');
+      stroke(...(isSim?[34,197,94]:[239,68,68])); doc.setLineWidth(0.3);
+      doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'S');
+      font('helvetica','bold',7.5); color(...(isSim?C.verdeT:C.vermelhoT));
+      doc.text(isSim?'SIM – Possui conhecimento técnico':'NÃO – Não possui conhecimento técnico',badgeX+badgeW/2,badgeY+3.8,{align:'center'});
+    } else {
+      font('helvetica','normal',8.5); color(...C.cinzaEsc);
+      doc.text('Não informado',mL+contentW-1,y+5,{align:'right'});
+    }
+    stroke(...C.cinzaLt); doc.setLineWidth(0.2);
+    doc.line(mL,y+rowH,mL+contentW,y+rowH);
+    y+=rowH+4;
   }
 
   // ── SEÇÕES DE INSPEÇÃO
