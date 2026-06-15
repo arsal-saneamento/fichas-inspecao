@@ -695,6 +695,8 @@ const IMG_GOV   = 'img/gov.png';
 // UTILS
 // ============================================================
 const $ = id => document.getElementById(id);
+// Fix Bug 15: escapa HTML para evitar quebra de layout/injeção quando o usuário digita <, >, & etc.
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let currentFormId = null;
 let saveTimer = null;
 
@@ -882,14 +884,6 @@ function renderForm(def){
           <div><div class="field-label">Cargo / Função</div><input type="text" data-field="meta_resp_cargo" class="text-input" placeholder="Cargo ou função"></div>
         </div>
       </div>
-      <div class="question-block">
-        <div class="question-text">O responsável da prestadora possui conhecimento técnico para acompanhar a fiscalização?</div>
-        <div class="radio-row">
-          <label class="radio-chip" data-for="meta_conhecimento_tecnico"><input type="radio" data-field="meta_conhecimento_tecnico" value="SIM"> ✓ SIM</label>
-          <label class="radio-chip" data-for="meta_conhecimento_tecnico"><input type="radio" data-field="meta_conhecimento_tecnico" value="NÃO"> ✗ NÃO</label>
-        </div>
-        <textarea class="obs-input" data-field="meta_conhecimento_tecnico_obs" placeholder="Observações: justifique por que possui (ou não) conhecimento técnico..." rows="1"></textarea>
-      </div>
     </div>
   </div>`;
 
@@ -906,9 +900,9 @@ function renderForm(def){
         const k=`q_${sPrefix}${q.num||q.key}`;
         const inv=q.invertido?'true':'false';
         html+=`<div class="radio-row">
-          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" data-inverted="${inv}" value="SIM"> ✓ SIM</label>
-          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" data-inverted="${inv}" value="NÃO"> ✗ NÃO</label>
-          <label class="radio-chip" data-for="${k}"><input type="radio" data-field="${k}" data-inverted="${inv}" value="NÃO SE APLICA"> — N/A</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" name="${k}" data-field="${k}" data-inverted="${inv}" value="SIM"> ✓ SIM</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" name="${k}" data-field="${k}" data-inverted="${inv}" value="NÃO"> ✗ NÃO</label>
+          <label class="radio-chip" data-for="${k}"><input type="radio" name="${k}" data-field="${k}" data-inverted="${inv}" value="NÃO SE APLICA"> — N/A</label>
         </div>
         <textarea class="obs-input" data-field="${k}_obs" placeholder="Observação..." rows="1"></textarea>`;
       } else if(q.type==='text'){
@@ -1095,19 +1089,6 @@ function showReport(){
   html+=`<div class="report-sec"><div class="report-sec-title">Responsável pelo Acompanhamento</div>`;
   html+=row('Nome do Responsável',data.meta_resp_nome);
   html+=row('Cargo / Função',data.meta_resp_cargo);
-  // Badge de conhecimento técnico
-  (function(){
-    const kt=data.meta_conhecimento_tecnico;
-    if(kt){
-      const badge=kt==='SIM'
-        ?'<span class="badge-sim">SIM</span>'
-        :'<span class="badge-nao">NÃO</span>';
-      html+=`<div class="report-row"><span class="rk">Conhecimento técnico para fiscalização</span><span class="rv">${badge}</span></div>`;
-    } else {
-      html+=row('Conhecimento técnico para fiscalização','Não informado');
-    }
-  })();
-  if(data.meta_conhecimento_tecnico_obs){html+=row('Observações',data.meta_conhecimento_tecnico_obs);}
   html+=`</div>`;
 
   def.sections.forEach((sec,si)=>{
@@ -1130,7 +1111,7 @@ function showReport(){
         if(v==='SIM')badge=`<span class="${inv?'badge-sim-inv':'badge-sim'}">SIM</span>`;
         else if(v==='NÃO')badge=`<span class="${inv?'badge-nao-inv':'badge-nao'}">NÃO</span>`;
         else if(v==='NÃO SE APLICA')badge=`<span class="badge-na">N/A</span>`;
-        html+=`<div class="report-row"><span class="rk">${q.num||''}. ${q.text}</span><span class="rv">${badge}${obs?` <em style="color:var(--muted);font-size:.8rem"> — ${obs}</em>`:''}</span></div>`;
+        html+=`<div class="report-row"><span class="rk">${q.num||''}. ${esc(q.text)}</span><span class="rv">${badge}${obs?` <em style="color:var(--muted);font-size:.8rem"> — ${esc(obs)}</em>`:''}</span></div>`;
       }
     });
     html+=`</div>`;
@@ -1143,7 +1124,7 @@ function showReport(){
     html+=`</div>`;
   }
 
-  if(data.consideracoes){html+=`<div class="report-sec"><div class="report-sec-title">Considerações Adicionais</div><div class="report-row"><span class="rv">${data.consideracoes}</span></div></div>`;}
+  if(data.consideracoes){html+=`<div class="report-sec"><div class="report-sec-title">Considerações Adicionais</div><div class="report-row"><span class="rv">${esc(data.consideracoes)}</span></div></div>`;}
 
   // conformidade no final
   html+=`<div class="conformidade-box">
@@ -1169,7 +1150,7 @@ function showReport(){
 }
 
 function row(k,v){
-  return `<div class="report-row"><span class="rk">${k}</span><span class="rv">${v||''}</span></div>`;
+  return `<div class="report-row"><span class="rk">${esc(k)}</span><span class="rv">${esc(v)}</span></div>`;
 }
 function closeModal(){$('reportModal').classList.remove('open');}
 $('reportModal').addEventListener('click',e=>{if(e.target===$('reportModal'))closeModal();});
@@ -1229,15 +1210,21 @@ async function exportPDF(){
     return new Promise(res=>{
       const img=new Image();
       img.onload=()=>{
-        const canvas=document.createElement('canvas');
-        canvas.width=img.naturalWidth;
-        canvas.height=img.naturalHeight;
-        const ctx=canvas.getContext('2d');
-        // Fundo branco explícito elimina qualquer canal alpha/transparência
-        ctx.fillStyle='#ffffff';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0);
-        res(canvas.toDataURL('image/jpeg',1.0));
+        try{
+          const canvas=document.createElement('canvas');
+          canvas.width=img.naturalWidth;
+          canvas.height=img.naturalHeight;
+          const ctx=canvas.getContext('2d');
+          // Fundo branco explícito elimina qualquer canal alpha/transparência
+          ctx.fillStyle='#ffffff';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.drawImage(img,0,0);
+          res(canvas.toDataURL('image/jpeg',1.0));
+        }catch(e){
+          // Fix Bug 16: canvas protegido (ex.: aberto via file://) lançava erro e travava a Promise → usa logo de texto
+          console.warn('Não foi possível converter a imagem para o PDF:',e);
+          res(null);
+        }
       };
       img.onerror=()=>res(null);
       img.src=url;
@@ -1554,36 +1541,6 @@ async function exportPDF(){
 
     drawDataRow('Nome do Responsável',data.meta_resp_nome,true);
     drawDataRow('Cargo / Função',data.meta_resp_cargo,false);
-
-    // Conhecimento técnico com badge visual
-    const kt=data.meta_conhecimento_tecnico;
-    const rowH=8;
-    checkY(rowH);
-    fill(...C.cinzaPale); doc.rect(mL,y,contentW,rowH,'F');
-    fill(...C.azulLight); doc.rect(mL,y,0.8,rowH,'F');
-    font('helvetica','bold',8); color(...C.cinzaMed);
-    doc.text('Conhecimento técnico para fiscalização',mL+3,y+5);
-    if(kt){
-      const isSim=kt==='SIM';
-      const badgeW=20, badgeH=5.5, badgeX=mL+contentW-badgeW-1, badgeY=y+1.3;
-      fill(...(isSim?C.verdeB:C.vermelhoB));
-      doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'F');
-      stroke(...(isSim?[34,197,94]:[239,68,68])); doc.setLineWidth(0.3);
-      doc.roundedRect(badgeX,badgeY,badgeW,badgeH,1,1,'S');
-      font('helvetica','bold',7.5); color(...(isSim?C.verdeT:C.vermelhoT));
-      doc.text(isSim?'SIM':'NÃO',badgeX+badgeW/2,badgeY+3.8,{align:'center'});
-    } else {
-      font('helvetica','normal',8.5); color(...C.cinzaEsc);
-      doc.text('Não informado',mL+contentW-1,y+5,{align:'right'});
-    }
-    stroke(...C.cinzaLt); doc.setLineWidth(0.2);
-    doc.line(mL,y+rowH,mL+contentW,y+rowH);
-    y+=rowH;
-
-    // Observações sobre o conhecimento técnico
-    if(data.meta_conhecimento_tecnico_obs){
-      drawDataRow('Observações',data.meta_conhecimento_tecnico_obs,false);
-    }
     y+=4;
   }
 
